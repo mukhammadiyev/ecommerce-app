@@ -1,0 +1,25 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
+  # Uncomment when backend is ready
+  # backend:
+  #   build:
+  #     context: .
+  #     dockerfile: docker/Dockerfile.backend
+  #   ports:
+  #     - "3001:3001"
+  #   env_file:
+  #     - server/.env
+  #   depends_on:
+  #     - redis
+
+  # redis:
+  #   image: redis:7-alpine
+  #   ports:
+  #     - "6379:6379"
