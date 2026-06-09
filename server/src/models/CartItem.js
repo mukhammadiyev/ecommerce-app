@@ -1,13 +1,13 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
-const OrderItem = sequelize.define('OrderItem', {
+const CartItem = sequelize.define('CartItem', {
   id: {
     type: DataTypes.INTEGER,
     autoIncrement: true,
     primaryKey: true
   },
-  order_id: {
+  cart_id: {
     type: DataTypes.INTEGER,
     allowNull: false
   },
@@ -17,16 +17,13 @@ const OrderItem = sequelize.define('OrderItem', {
   },
   quantity: {
     type: DataTypes.INTEGER,
-    allowNull: false
-  },
-  price: {
-    type: DataTypes.DECIMAL(10, 2),
-    allowNull: false
+    allowNull: false,
+    defaultValue: 1
   }
 }, {
-  tableName: 'order_items',
+  tableName: 'cart_items',
   timestamps: true,
   underscored: true
 });
 
-module.exports = OrderItem;
+module.exports = CartItem;
