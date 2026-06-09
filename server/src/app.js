@@ -7,6 +7,7 @@ const authRoutes = require('./routes/auth.routes');
 const productRoutes = require('./routes/products.routes');
 const cartRoutes = require('./routes/cart.routes');
 const orderRoutes = require('./routes/orders.routes');
+const reviewRoutes = require('./routes/reviews.routes');
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // Tizim salomatligi tekshiruvi (Healthcheck)
 app.get('/api/health', (req, res) => {
