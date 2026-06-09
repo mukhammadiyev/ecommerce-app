@@ -8,13 +8,8 @@ exports.createProduct = async (req, res) => {
   try {
     const { name, description, price, stock, image_url, category_id } = req.body;
 
-    const newProduct = await Product.create({ 
-      name, 
-      description, 
-      price, 
-      stock, 
-      image_url,
-      category_id // Agar kategoriyani ishlatsangiz buni ham qo'shib ketamiz
+    const newProduct = await Product.create({
+      name, description, price, stock, image_url, category_id // Agar kategoriyani ishlatsangiz buni ham qo'shib ketamiz
     });
 
     res.status(201).json({ success: true, message: "Mahsulot muvaffaqiyatli qo'shildi! 🛍️", data: newProduct });
@@ -59,10 +54,10 @@ exports.getAllProducts = async (req, res) => {
       order: [['created_at', 'DESC']]
     });
 
-    res.status(200).json({ 
-      success: true, 
-      count: products.length, 
-      data: products 
+    res.status(200).json({
+      success: true,
+      count: products.length,
+      data: products
     });
   } catch (error) {
     res.status(500).json({ success: false, message: "Serverda xatolik", error: error.message });
