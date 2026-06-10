@@ -1,5 +1,5 @@
-const Review = require('../models/review');
-const User = require('../models/user');
+const Review = require('../models/Review');
+const User = require('../models/User');
 
 // ==========================================
 // 1. MAHSULOTGA SHARH YOZISH (Faqat ro'yxatdan o'tganlar uchun)
@@ -60,7 +60,7 @@ exports.getProductReviews = async (req, res) => {
         as: 'User',
         attributes: ['id', 'first_name', 'last_name'] 
       }],
-      order: [['created_at', 'DESC']]
+      order: [['createdAt', 'DESC']]
     });
 
     res.status(200).json({ success: true, count: reviews.length, data: reviews });

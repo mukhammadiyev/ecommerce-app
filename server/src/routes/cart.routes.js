@@ -5,7 +5,6 @@ const authMiddleware = require('../middleware/auth');
 
 router.use(authMiddleware);
 
-// Mana bu yerga '/' o'rniga '/add' deb yozamiz:
 router.post('/add', cartController.addToCart); 
 router.get('/', cartController.getCart);
 

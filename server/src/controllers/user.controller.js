@@ -1,5 +1,5 @@
 const User = require('../models/user');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs'); // Loyihangizdagi boshqa joylarda bcryptjs bo'lgani uchun moslashtirildi
 
 // ==========================================
 // 1. PROFIL MA'LUMOTLARINI OLISH
@@ -36,11 +36,11 @@ exports.updateProfile = async (req, res) => {
       return res.status(404).json({ success: false, message: "Foydalanuvchi topilmadi." });
     }
 
-    // Faqat yuborilgan maydonlarni yangilaymiz
-    user.first_name = first_name || user.first_name;
-    user.last_name = last_name || user.last_name;
-    user.phone_number = phone_number || user.phone_number;
-    user.shipping_address = shipping_address || user.shipping_address;
+    // Faqat yuborilgan yoki o'zgargan maydonlarni yangilaymiz
+    user.first_name = first_name !== undefined ? first_name : user.first_name;
+    user.last_name = last_name !== undefined ? last_name : user.last_name;
+    user.phone_number = phone_number !== undefined ? phone_number : user.phone_number;
+    user.shipping_address = shipping_address !== undefined ? shipping_address : user.shipping_address;
 
     await user.save();
 
