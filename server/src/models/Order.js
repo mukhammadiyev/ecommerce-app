@@ -9,7 +9,11 @@ const Order = sequelize.define('Order', {
   },
   user_id: {
     type: DataTypes.INTEGER,
-    allowNull: false
+    allowNull: false,
+    references: {
+      model: 'users', // 'users' jadvaliga bog'lanadi
+      key: 'id'
+    }
   },
   total_price: {
     type: DataTypes.DECIMAL(10, 2),
@@ -21,6 +25,10 @@ const Order = sequelize.define('Order', {
   },
   shipping_address: {
     type: DataTypes.TEXT,
+    allowNull: false
+  },
+  phone_number: { // 👈 Figma checkout formasi uchun telefon raqami maydoni
+    type: DataTypes.STRING,
     allowNull: false
   }
 }, {

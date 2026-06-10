@@ -1,7 +1,5 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
-const User = require('./user');
-const Product = require('./product');
 
 const Review = sequelize.define('Review', {
   id: {
@@ -12,10 +10,7 @@ const Review = sequelize.define('Review', {
   rating: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    validate: {
-      min: 1,
-      max: 5 // Faqat 1 dan 5 gacha baho qo'yish mumkin
-    }
+    validate: { min: 1, max: 5 }
   },
   comment: {
     type: DataTypes.TEXT,
@@ -23,12 +18,8 @@ const Review = sequelize.define('Review', {
   }
 }, {
   timestamps: true,
-  underscored: true
+  underscored: true,
+  tableName: 'reviews'
 });
-
-// Modellarni o'zaro bog'laymiz
-Review.belongsTo(User, { foreignKey: 'user_id', onDelete: 'CASCADE' });
-Review.belongsTo(Product, { foreignKey: 'product_id', onDelete: 'CASCADE' });
-Product.hasMany(Review, { foreignKey: 'product_id' });
 
 module.exports = Review;

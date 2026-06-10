@@ -3,9 +3,10 @@ const router = express.Router();
 const cartController = require('../controllers/cart.controller');
 const authMiddleware = require('../middleware/auth');
 
-router.use(authMiddleware); // Savatcha to'liq auth bilan himoyalandi
+router.use(authMiddleware);
 
-router.post('/', cartController.addToCart);
+// Mana bu yerga '/' o'rniga '/add' deb yozamiz:
+router.post('/add', cartController.addToCart); 
 router.get('/', cartController.getCart);
 
 module.exports = router;

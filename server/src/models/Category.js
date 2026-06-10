@@ -10,15 +10,16 @@ const Category = sequelize.define('Category', {
   name: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true // Bir xil nomli kategoriya bo'lmasligi uchun
+    unique: true // Bir xil nomli kategoriya qayta ochilmasligi uchun
   },
-  description: {
-    type: DataTypes.TEXT,
-    allowNull: true
+  image_url: {
+    type: DataTypes.STRING,
+    allowNull: true // Figma bosh sahifasida kategoriyalar rasmlari bilan turibdi
   }
 }, {
+  tableName: 'categories',
   timestamps: true,
-  underscored: true // created_at va updated_at bo'lishi uchun
+  underscored: true
 });
 
 module.exports = Category;

@@ -1,11 +1,20 @@
 const Review = require('../models/review');
 const User = require('../models/user');
 
-// 1. Mahsulotga sharh yozish (Faqat ro'yxatdan o'tganlar uchun)
+// ==========================================
+// 1. MAHSULOTGA SHARH YOZISH (Faqat ro'yxatdan o'tganlar uchun)
+// ==========================================
 exports.addReview = async (req, res) => {
   try {
     const userId = req.user.id;
     const { product_id, rating, comment } = req.body;
+
+    if (!product_id || !rating) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Mahsulot ID va reyting (rating) ko'rsatilishi shart!" 
+      });
+    }
 
     // Bitta foydalanuvchi bitta mahsulotga faqat 1 marta sharh yozishi mumkin
     const alreadyReviewed = await Review.findOne({
@@ -36,15 +45,21 @@ exports.addReview = async (req, res) => {
   }
 };
 
-// 2. Biror mahsulotning barcha sharhlarini olish (Hammaga ochiq)
+// ==========================================
+// 2. BIROR MAHSULOTNING BARCHA SHARHLARINI OLISH (Hammaga ochiq)
+// ==========================================
 exports.getProductReviews = async (req, res) => {
   try {
     const { productId } = req.params;
 
     const reviews = await Review.findAll({
       where: { product_id: productId },
-      // Sharh egasining ismi chiqishi uchun User modelini ulaymiz
-      include: [{ model: User, attributes: ['id', 'first_name', 'last_name'] }],
+      // 👈 Modelda ko'rsatilgan 'User' taxallusi (as) bu yerga ham qo'shildi
+      include: [{ 
+        model: User, 
+        as: 'User',
+        attributes: ['id', 'first_name', 'last_name'] 
+      }],
       order: [['created_at', 'DESC']]
     });
 
