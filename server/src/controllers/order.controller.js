@@ -1,6 +1,6 @@
 const { sequelize } = require('../config/database');
-const Cart = require('../models/cart');
-const CartItem = require('../models/cartitem');
+const Cart = require('../models/cart');      
+const CartItem = require('../models/cartitem'); 
 const Product = require('../models/product');
 const Order = require('../models/order');
 const OrderItem = require('../models/orderitem');
@@ -12,13 +12,12 @@ const emailService = require('../services/email.service');
 // ==========================================
 exports.createOrder = async (req, res) => {
   const transaction = await sequelize.transaction();
-  let isFinished = false; // 🛡️ Tranzaksiya yakunlanganini kuzatuvchi flag
+  let isFinished = false; 
 
   try {
     const userId = req.user.id;
     const { shipping_address, phone_number } = req.body; 
 
-    // Majburiy maydonlar borligini tekshirish
     if (!shipping_address || !phone_number) {
       await transaction.rollback();
       isFinished = true;
@@ -28,7 +27,6 @@ exports.createOrder = async (req, res) => {
       });
     }
 
-    // Xatolik xabariga ko'ra 'CartItems' taxallusi ishlatiladi 🛒
     const cart = await Cart.findOne({
       where: { user_id: userId },
       include: [{ 
@@ -38,7 +36,6 @@ exports.createOrder = async (req, res) => {
       }]
     });
 
-    // Tekshirish ham .CartItems orqali bajariladi
     if (!cart || !cart.CartItems || cart.CartItems.length === 0) {
       await transaction.rollback();
       isFinished = true;
@@ -47,6 +44,12 @@ exports.createOrder = async (req, res) => {
 
     let total_price = 0;
     for (const item of cart.CartItems) { 
+      if (!item.Product) {
+        await transaction.rollback();
+        isFinished = true;
+        return res.status(400).json({ success: false, message: "Savatdagi mahsulot tizimda topilmadi!" });
+      }
+      
       if (item.Product.stock < item.quantity) {
         await transaction.rollback();
         isFinished = true;
@@ -79,12 +82,10 @@ exports.createOrder = async (req, res) => {
 
     await CartItem.destroy({ where: { cart_id: cart.id }, transaction });
 
-    // Hamma narsa muvaffaqiyatli bajarilgach bazaga yozamiz
     await transaction.commit();
-    isFinished = true; // 🚀 Tranzaksiya muvaffaqiyatli commit bo'ldi!
+    isFinished = true; 
 
-    // 🛡️ Email xizmati chaqirilishini try-catch ichiga olamiz. 
-    // Agar xizmat topilmasa yoki xato bersa, asosiy catch blokiga o'tib ketmaydi.
+    // Email yuborish
     try {
       const user = await User.findByPk(userId);
       if (user && emailService && typeof emailService.sendOrderInvoiceEmail === 'function') {
@@ -102,18 +103,10 @@ exports.createOrder = async (req, res) => {
     });
 
   } catch (error) {
-    // 🛡️ FAQAT tranzaksiya hali yakunlanmagan bo'lsagina rollback qilinadi
     if (!isFinished) {
       await transaction.rollback();
-      return res.status(500).json({ success: false, message: "Buyurtma berishda xatolik yuz berdi", error: error.message });
     }
-
-    // Har qanday holatda ham xavfsiz javob qaytarish
-    return res.status(201).json({
-      success: true,
-      message: "Buyurtmangiz muvaffaqiyatli rasmiylashtirildi! 🎉",
-      total_price: total_price
-    });
+    return res.status(500).json({ success: false, message: "Buyurtma berishda xatolik yuz berdi", error: error.message });
   }
 };
 
@@ -130,7 +123,7 @@ exports.getMyOrders = async (req, res) => {
         model: OrderItem,
         include: [{
           model: Product,
-          attributes: ['id', 'name', 'price', 'image_url']
+          attributes: ['id', 'name', 'price']
         }]
       }],
       order: [['createdAt', 'DESC']]

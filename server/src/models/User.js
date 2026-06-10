@@ -38,7 +38,7 @@ const User = sequelize.define('User', {
 }, {
   tableName: 'users',
   timestamps: true,
-  underscored: true // database-da snake_case (created_at, updated_at) qiladi
+  underscored: true // database-da snake_case (createdat, updated_at) qiladi
 });
 
 module.exports = User;

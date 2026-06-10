@@ -30,11 +30,9 @@ exports.addToCart = async (req, res) => {
     });
 
     if (cartItem) {
-      // Agar savatda mahsulot bo'lsa, miqdorini oshiramiz
       await cartItem.increment('quantity', { by: reqQuantity });
       await cartItem.reload();
     } else {
-      // Agar bo'lmasa, yangi qator yaratamiz
       cartItem = await CartItem.create({
         cart_id: cart.id,
         product_id: product_id,
@@ -42,7 +40,6 @@ exports.addToCart = async (req, res) => {
       });
     }
 
-    // Status kodini 201 Created qildik (Yangi resurs yaratilgani uchun)
     res.status(201).json({ 
       success: true, 
       message: "Mahsulot savatchaga muvaffaqiyatli qo'shildi! 🛒", 
@@ -64,7 +61,7 @@ exports.getCart = async (req, res) => {
       where: { user_id: userId },
       include: [{
         model: CartItem,
-        as: 'CartItems', // 👈 'items' emas, bazadagi asl taxallus 'CartItems' ga almashtirildi!
+        as: 'CartItems', 
         include: [{
           model: Product,
           attributes: ['id', 'name', 'price', 'image_url']
@@ -72,7 +69,6 @@ exports.getCart = async (req, res) => {
       }]
     });
 
-    // Endi tekshiruvni ham bazaga mos ravishda .CartItems orqali qilamiz
     if (!cart || !cart.CartItems || !cart.CartItems.length) {
       return res.status(200).json({ success: true, message: "Savatchangiz hozircha bo'sh", data: [] });
     }
