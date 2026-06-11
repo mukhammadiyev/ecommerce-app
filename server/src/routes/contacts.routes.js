@@ -3,11 +3,14 @@ const router = express.Router();
 const contactController = require('../controllers/contact.controller');
 const authMiddleware = require('../middleware/auth');
 const adminMiddleware = require('../middleware/admin');
+const validate = require('../middleware/validation');
+const { contactSchema } = require('../validators/contact.validator');
 
-// Saytga kelgan har qanday odam xabar qoldira olishi uchun (Auth shart emas)
-router.post('/', contactController.createContactMessage);
+// Ochiq yo'l: Har kim xabar qoldira oladi
+router.post('/', validate(contactSchema), contactController.createContactMessage);
 
-// Faqat admin ko'ra olishi uchun
+// Himoyalangan yo'llar: Faqat Admin ko'ra oladi va o'chira oladi 🔒
 router.get('/admin', authMiddleware, adminMiddleware, contactController.getAllMessagesForAdmin);
+router.delete('/admin/:id', authMiddleware, adminMiddleware, contactController.deleteMessage); // 🆕 Xabarni o'chirish
 
 module.exports = router;

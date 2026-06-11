@@ -2,127 +2,156 @@ const Product = require('../models/product');
 const ProductImage = require('../models/productimage');
 const Category = require('../models/category');
 const { Op } = require('sequelize');
+const ApiResponse = require('../utils/response');
+const AppError = require('../utils/appError');
 
-// ==========================================
-// YANGI MAHSULOT QO'SHISH (ADMIN)
-// ==========================================
+// 1. Yangi mahsulot yaratish (Bulutli rasm yuklash bilan)
 exports.createProduct = async (req, res) => {
-  try {
-    const { name, description, price, stock, image_url, category_id, images } = req.body;
+  const { name, description, price, stock, category_id } = req.body;
 
-    let imagesData = [];
-    if (images && Array.isArray(images)) {
-      imagesData = images.map(url => ({ image_url: url }));
-    }
-
-    const newProduct = await Product.create({
-      name,
-      description,
-      price,
-      stock,
-      image_url,
-      category_id,
-      images: imagesData
-    }, {
-      include: [{ model: ProductImage, as: 'images' }]
-    });
-
-    const completeProduct = await Product.findByPk(newProduct.id, {
-      include: [
-        { model: ProductImage, as: 'images', attributes: ['id', 'image_url'] },
-        { model: Category, as: 'category', attributes: ['id', 'name'] }
-      ]
-    });
-
-    res.status(201).json({
-      success: true,
-      message: "Mahsulot va galereya muvaffaqiyatli saqlandi! 🚀",
-      data: completeProduct
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Serverda xatolik", error: error.message });
+  // 🆕 Asosiy rasm yuklanganini tekshirish
+  if (!req.files || !req.files['image']) {
+    throw new AppError("Mahsulotning asosiy rasmini ('image') yuklash shart!", 400);
   }
+  const image_url = req.files['image'][0].path; // Cloudinary URL
+
+  // 🆕 Galereya rasmlarini yig'ish (agar yuklangan bo'lsa)
+  let imagesData = [];
+  if (req.files['gallery']) {
+    imagesData = req.files['gallery'].map(file => ({ image_url: file.path }));
+  }
+
+  // Mahsulotni bazaga yozish
+  const newProduct = await Product.create({
+    name, description, price, stock, image_url, category_id,
+    images: imagesData
+  }, {
+    include: [{ model: ProductImage, as: 'images' }]
+  });
+
+  const completeProduct = await Product.findByPk(newProduct.id, {
+    include: [
+      { model: ProductImage, as: 'images', attributes: ['id', 'image_url'] },
+      { model: Category, as: 'category', attributes: ['id', 'name'] }
+    ]
+  });
+
+  return ApiResponse.send(res, "Mahsulot va galereya muvaffaqiyatli saqlandi! 🚀", completeProduct, 201);
 };
 
-// ==========================================
-// MAHSULOTLARNI OLISH, QIDIRISH VA FILTERLASH
-// ==========================================
-// MAHSULOTLARNI OLISH, QIDIRISH, FILTERLASH VA TARTIBLASH (SORTING)
+// 2. Barcha mahsulotlarni filtrlash va qidiruv bilan olish
 exports.getAllProducts = async (req, res) => {
-  try {
-    const { search, minPrice, maxPrice, category_id, sortBy } = req.query;
-    let whereCondition = {};
+  const { search, minPrice, maxPrice, category_id, sortBy } = req.query;
+  let whereCondition = {};
 
-    // 1. Qidiruv mantiqi (Ismi va tavsifi bo'yicha)
-    if (search) {
-      const { Op } = require('sequelize');
-      whereCondition[Op.or] = [
-        { name: { [Op.like]: `%${search}%` } },
-        { description: { [Op.like]: `%${search}%` } }
-      ];
-    }
-
-    // 2. Kategoriya bo'yicha filter
-    if (category_id) {
-      whereCondition.category_id = category_id;
-    }
-
-    // 3. Narx oralig'i (Min/Max) bo'yicha filter
-    if (minPrice || maxPrice) {
-      const { Op } = require('sequelize');
-      whereCondition.price = {};
-      if (minPrice) whereCondition.price[Op.gte] = parseFloat(minPrice);
-      if (maxPrice) whereCondition.price[Op.lte] = parseFloat(maxPrice);
-    }
-
-    // 4. Figma dizaynidagi "Sort by" mantiqi 📊
-    let orderClause = [['createdAt', 'DESC']]; // "Default" yoki "Newest" holatda yangilari tepada chiqadi
-
-    if (sortBy === 'price_low') {
-      orderClause = [['price', 'ASC']];   // "Price: Low to High"
-    } else if (sortBy === 'price_high') {
-      orderClause = [['price', 'DESC']];  // "Price: High to Low"
-    }
-
-    const products = await Product.findAll({
-      where: whereCondition,
-      include: [
-        { model: require('../models/productimage'), as: 'images', attributes: ['id', 'image_url'] },
-        { model: require('../models/category'), as: 'category', attributes: ['id', 'name'] }
-      ],
-      order: orderClause
-    });
-
-    res.status(200).json({
-      success: true,
-      count: products.length,
-      data: products
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Serverda xatolik yuz berdi", error: error.message });
+  if (search) {
+    whereCondition[Op.or] = [
+      { name: { [Op.like]: `%${search}%` } },
+      { description: { [Op.like]: `%${search}%` } }
+    ];
   }
+
+  if (category_id) {
+    whereCondition.category_id = category_id;
+  }
+
+  if (minPrice || maxPrice) {
+    whereCondition.price = {};
+    if (minPrice) whereCondition.price[Op.gte] = parseFloat(minPrice);
+    if (maxPrice) whereCondition.price[Op.lte] = parseFloat(maxPrice);
+  }
+
+  let orderClause = [['createdAt', 'DESC']];
+  if (sortBy === 'price_low') {
+    orderClause = [['price', 'ASC']];
+  } else if (sortBy === 'price_high') {
+    orderClause = [['price', 'DESC']];
+  }
+
+  const products = await Product.findAll({
+    where: whereCondition,
+    include: [
+      { model: ProductImage, as: 'images', attributes: ['id', 'image_url'] },
+      { model: Category, as: 'category', attributes: ['id', 'name'] }
+    ],
+    order: orderClause
+  });
+
+  return ApiResponse.send(res, "Mahsulotlar ro'yxati yuklandi", products);
 };
 
-// ==========================================
-// BITTA MAHSULOTNI ID BO'YICHA OLISH
-// ==========================================
+// 3. ID bo'yicha bitta mahsulotni olish
 exports.getProductById = async (req, res) => {
-  try {
-    const { id } = req.params;
+  const { id } = req.params;
 
-    const product = await Product.findByPk(id, {
-      include: [
-        { model: ProductImage, as: 'images', attributes: ['id', 'image_url'] },
-        { model: Category, as: 'category', attributes: ['id', 'name'] }
-      ]
-    });
+  const product = await Product.findByPk(id, {
+    include: [
+      { model: ProductImage, as: 'images', attributes: ['id', 'image_url'] },
+      { model: Category, as: 'category', attributes: ['id', 'name'] }
+    ]
+  });
 
-    if (!product) {
-      return res.status(404).json({ success: false, message: "Mahsulot topilmadi!" });
-    }
-
-    res.status(200).json({ success: true, data: product });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Serverda xatolik", error: error.message });
+  if (!product) {
+    throw new AppError("Mahsulot topilmadi!", 404);
   }
+
+  return ApiResponse.send(res, "Mahsulot topildi", product);
+};
+
+// 4. Mahsulotni tahrirlash (PUT) 🔄
+exports.updateProduct = async (req, res) => {
+  const { id } = req.params;
+  const { name, description, price, stock, category_id } = req.body;
+
+  const product = await Product.findByPk(id);
+  
+  if (!product) {
+    throw new AppError("Mahsulot topilmadi!", 404);
+  }
+
+  // 🆕 Yangi asosiy rasm kelgan bo'lsa yangilaymiz
+  if (req.files && req.files['image']) {
+    product.image_url = req.files['image'][0].path;
+  }
+
+  // 🆕 Yangi galereya rasmlari kelgan bo'lsa, eskilarni o'chirib yangilarini yozamiz
+  if (req.files && req.files['gallery']) {
+    // Avvalgi galereya bog'lanishlarini o'chirish
+    await ProductImage.destroy({ where: { product_id: id } });
+    
+    // Yangilarini qo'shish
+    const newImages = req.files['gallery'].map(file => ({
+      product_id: id,
+      image_url: file.path
+    }));
+    await ProductImage.bulkCreate(newImages);
+  }
+
+  product.name = name !== undefined ? name : product.name;
+  product.description = description !== undefined ? description : product.description;
+  product.price = price !== undefined ? price : product.price;
+  product.stock = stock !== undefined ? stock : product.stock;
+  product.category_id = category_id !== undefined ? category_id : product.category_id;
+
+  await product.save();
+
+  // Yangilangan to'liq ma'lumotni qaytarish
+  const updatedProduct = await Product.findByPk(id, {
+    include: [{ model: ProductImage, as: 'images', attributes: ['id', 'image_url'] }]
+  });
+
+  return ApiResponse.send(res, "Mahsulot muvaffaqiyatli yangilandi! 🆙", updatedProduct);
+};
+
+// 5. Mahsulotni o'chirish (DELETE)
+exports.deleteProduct = async (req, res) => {
+  const { id } = req.params;
+
+  const product = await Product.findByPk(id);
+  if (!product) {
+    throw new AppError("Mahsulot topilmadi!", 404);
+  }
+
+  await product.destroy();
+  return ApiResponse.send(res, "Mahsulot muvaffaqiyatli o'chirildi! 🗑️", null);
 };

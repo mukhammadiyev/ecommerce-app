@@ -21,7 +21,12 @@ const Blog = sequelize.define('Blog', {
   },
   author: {
     type: DataTypes.STRING,
-    defaultValue: 'Oliver Bennett' // Figma dizaynidagi muallif ismi default qilib olindi
+    defaultValue: 'Oliver Bennett'
+  },
+  // 🆕 Mana shu qismni model ichiga qo'shib qo'ying:
+  is_published: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
   }
 }, {
   tableName: 'blogs',
