@@ -1,94 +1,78 @@
 const User = require('../models/user');
-const bcrypt = require('bcryptjs'); // Loyihangizdagi boshqa joylarda bcryptjs bo'lgani uchun moslashtirildi
+const bcrypt = require('bcryptjs');
+const ApiResponse = require('../utils/response');
+const AppError = require('../utils/appError');
 
-// ==========================================
-// 1. PROFIL MA'LUMOTLARINI OLISH
-// ==========================================
+// 1. Profil ma'lumotlarini olish
 exports.getProfile = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    
-    // Paroldan tashqari barcha ma'lumotlarni bazadan olamiz
-    const user = await User.findByPk(userId, {
-      attributes: { exclude: ['password'] }
-    });
+  const userId = req.user.id;
+  const user = await User.findByPk(userId, {
+    attributes: { exclude: ['password'] }
+  });
 
-    if (!user) {
-      return res.status(404).json({ success: false, message: "Foydalanuvchi topilmadi." });
-    }
-
-    res.status(200).json({ success: true, data: user });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Serverda xatolik", error: error.message });
+  if (!user) {
+    throw new AppError("Foydalanuvchi topilmadi.", 404);
   }
+
+  return ApiResponse.send(res, "Profil ma'lumotlari keltirildi", user);
 };
 
-// ==========================================
-// 2. PROFIL MA'LUMOTLARINI YANGILASH
-// ==========================================
+// 2. Profil ma'lumotlarini tahrirlash
 exports.updateProfile = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { first_name, last_name, phone_number, shipping_address } = req.body;
+  const userId = req.user.id;
+  const { first_name, last_name, phone_number, shipping_address } = req.body;
 
-    const user = await User.findByPk(userId);
-    if (!user) {
-      return res.status(404).json({ success: false, message: "Foydalanuvchi topilmadi." });
-    }
-
-    // Faqat yuborilgan yoki o'zgargan maydonlarni yangilaymiz
-    user.first_name = first_name !== undefined ? first_name : user.first_name;
-    user.last_name = last_name !== undefined ? last_name : user.last_name;
-    user.phone_number = phone_number !== undefined ? phone_number : user.phone_number;
-    user.shipping_address = shipping_address !== undefined ? shipping_address : user.shipping_address;
-
-    await user.save();
-
-    // Yangilangan ma'lumotni parolsiz qaytaramiz
-    const updatedUser = user.toJSON();
-    delete updatedUser.password;
-
-    res.status(200).json({ 
-      success: true, 
-      message: "Profil ma'lumotlari muvaffaqiyatli yangilandi! 📝", 
-      data: updatedUser 
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Serverda xatolik", error: error.message });
+  const user = await User.findByPk(userId);
+  if (!user) {
+    throw new AppError("Foydalanuvchi topilmadi.", 404);
   }
+
+  user.first_name = first_name !== undefined ? first_name : user.first_name;
+  user.last_name = last_name !== undefined ? last_name : user.last_name;
+  user.phone_number = phone_number !== undefined ? phone_number : user.phone_number;
+  user.shipping_address = shipping_address !== undefined ? shipping_address : user.shipping_address;
+
+  await user.save();
+
+  const updatedUser = user.toJSON();
+  delete updatedUser.password;
+
+  return ApiResponse.send(res, "Profil ma'lumotlari muvaffaqiyatli yangilandi! 📝", updatedUser);
 };
 
-// ==========================================
-// 3. PAROLNI O'ZGARTIRISH
-// ==========================================
+// 3. Parolni yangilash
 exports.updatePassword = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { old_password, new_password } = req.body;
+  const userId = req.user.id;
+  const { old_password, new_password } = req.body;
 
-    if (!old_password || !new_password) {
-      return res.status(400).json({ success: false, message: "Eski va yangi parollar kiritilishi shart!" });
-    }
-
-    const user = await User.findByPk(userId);
-    if (!user) {
-      return res.status(404).json({ success: false, message: "Foydalanuvchi topilmadi." });
-    }
-
-    // Eski parol to'g'riligini tekshiramiz
-    const isMatch = await bcrypt.compare(old_password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ success: false, message: "Eski parol noto'g'ri kiritildi!" });
-    }
-
-    // Yangi parolni shifrlab saqlaymiz
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(new_password, salt);
-    
-    await user.save();
-
-    res.status(200).json({ success: true, message: "Parolingiz muvaffaqiyatli o'zgartirildi! 🔒" });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Serverda xatolik", error: error.message });
+  const user = await User.findByPk(userId);
+  if (!user) {
+    throw new AppError("Foydalanuvchi topilmadi.", 404);
   }
+
+  const isMatch = await bcrypt.compare(old_password, user.password);
+  if (!isMatch) {
+    throw new AppError("Eski parol noto'g'ri kiritildi!", 400);
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  user.password = await bcrypt.hash(new_password, salt);
+  await user.save();
+
+  return ApiResponse.send(res, "Parolingiz muvaffaqiyatli o'zgartirildi! 🔒");
+};
+
+// 4. Akkauntni o'chirish (DELETE) 🆕
+exports.deleteAccount = async (req, res) => {
+  const userId = req.user.id;
+
+  const user = await User.findByPk(userId);
+  if (!user) {
+    throw new AppError("O'chirish uchun foydalanuvchi topilmadi.", 404);
+  }
+
+  // Foydalanuvchi o'chganda uning savati va boshqa bog'liq narsalari modeldagi CASCADE orqali o'chib ketadi
+  await user.destroy();
+
+  return ApiResponse.send(res, "Sizning akkauntingiz muvaffaqiyatli o'chirildi! 🗑️");
 };

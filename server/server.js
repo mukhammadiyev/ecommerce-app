@@ -11,7 +11,7 @@ const CartItem = require('./src/models/cartitem');
 const Order = require('./src/models/order');
 const OrderItem = require('./src/models/orderitem');
 const Category = require('./src/models/category');
-const Review = require('./src/models/review'); // 👈 Yangi Review modeli
+const Review = require('./src/models/review'); 
 
 // === SEQUELIZE JADVALLARARO BOG'LANISHLAR (RELATIONS) ===
 
@@ -49,7 +49,6 @@ Category.hasMany(Product, { foreignKey: 'category_id', as: 'products', onDelete:
 Product.belongsTo(Category, { foreignKey: 'category_id', as: 'category' });
 
 // === SHARHLAR VA REYTINGLAR (REVIEW RELATIONS) ===
-// 🛡️ Taxalluslarni (as) bir-biridan farqli qilib o'zgartirdik:
 User.hasMany(Review, { foreignKey: 'user_id', as: 'UserReviews', onDelete: 'CASCADE' });
 Review.belongsTo(User, { foreignKey: 'user_id', as: 'User' });
 

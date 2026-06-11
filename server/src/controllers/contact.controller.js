@@ -1,38 +1,31 @@
-const Contact = require('../models/contact'); // Yo'li to'g'rilandi
+const Contact = require('../models/Contact');
+const ApiResponse = require('../utils/response');
+const AppError = require('../utils/appError');
 
+// 1. Foydalanuvchidan kelgan xabarni saqlash
 exports.createContactMessage = async (req, res) => {
-  try {
-    const { name, email, subject, message } = req.body;
+  const { name, email, message } = req.body;
 
-    if (!name || !email || !message) {
-      return res.status(400).json({
-        success: false,
-        message: "Ism, email va xabar maydonlarini to'ldirish majburiy!"
-      });
-    }
-
-    const contact = await Contact.create({
-      name,
-      email,
-      subject: subject || "Mavzu ko'rsatilmagan",
-      message
-    });
-
-    return res.status(201).json({
-      success: true,
-      message: "Xabaringiz muvaffaqiyatli yuborildi! Tez orada siz bilan bog'lanamiz. 📬",
-      data: contact
-    });
-  } catch (error) {
-    return res.status(500).json({ success: false, message: "Xabar yuborishda xatolik yuz berdi", error: error.message });
-  }
+  const newMessage = await Contact.create({ name, email, message });
+  return ApiResponse.send(res, "Xabaringiz adminga yetkazildi", newMessage, 201);
 };
 
+// 2. Admin uchun barcha xabarlarni olish
 exports.getAllMessagesForAdmin = async (req, res) => {
-  try {
-    const messages = await Contact.findAll({ order: [['createdAt', 'DESC']] });
-    return res.status(200).json({ success: true, count: messages.length, data: messages });
-  } catch (error) {
-    return res.status(500).json({ success: false, message: "Xabarlarni yuklashda xatolik", error: error.message });
+  const messages = await Contact.findAll({ order: [['createdAt', 'DESC']] });
+  return ApiResponse.send(res, "Barcha xabarlar ro'yxati (Admin)", messages);
+};
+
+// 3. Admin xabarlarni o'chirishi (DELETE) 🆕
+exports.deleteMessage = async (req, res) => {
+  const { id } = req.params;
+
+  const message = await Contact.findByPk(id);
+  if (!message) {
+    throw new AppError("O'chirish uchun xabar topilmadi", 404);
   }
+
+  await message.destroy();
+
+  return ApiResponse.send(res, "Xabar muvaffaqiyatli o'chirildi! 🗑️");
 };

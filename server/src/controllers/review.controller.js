@@ -1,70 +1,72 @@
 const Review = require('../models/Review');
 const User = require('../models/User');
+const ApiResponse = require('../utils/response');
+const AppError = require('../utils/appError');
 
-// ==========================================
-// 1. MAHSULOTGA SHARH YOZISH (Faqat ro'yxatdan o'tganlar uchun)
-// ==========================================
+// 1. Yangi sharh qo'shish
 exports.addReview = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { product_id, rating, comment } = req.body;
+  const { product_id, rating, comment } = req.body;
 
-    if (!product_id || !rating) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Mahsulot ID va reyting (rating) ko'rsatilishi shart!" 
-      });
-    }
+  const review = await Review.create({
+    user_id: req.user.id,
+    product_id,
+    rating,
+    comment
+  });
 
-    // Bitta foydalanuvchi bitta mahsulotga faqat 1 marta sharh yozishi mumkin
-    const alreadyReviewed = await Review.findOne({
-      where: { user_id: userId, product_id }
-    });
-
-    if (alreadyReviewed) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Siz bu mahsulotga allaqachon sharh qoldirgan ekansiz!" 
-      });
-    }
-
-    const newReview = await Review.create({
-      user_id: userId,
-      product_id,
-      rating,
-      comment
-    });
-
-    res.status(201).json({ 
-      success: true, 
-      message: "Sharhingiz muvaffaqiyatli qo'shildi! ⭐", 
-      data: newReview 
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Serverda xatolik", error: error.message });
-  }
+  return ApiResponse.send(res, "Sharhingiz qabul qilindi", review, 201);
 };
 
-// ==========================================
-// 2. BIROR MAHSULOTNING BARCHA SHARHLARINI OLISH (Hammaga ochiq)
-// ==========================================
+// 2. Mahsulotga tegishli barcha sharhlarni olish
 exports.getProductReviews = async (req, res) => {
-  try {
-    const { productId } = req.params;
+  const { productId } = req.params;
 
-    const reviews = await Review.findAll({
-      where: { product_id: productId },
-      // 👈 Modelda ko'rsatilgan 'User' taxallusi (as) bu yerga ham qo'shildi
-      include: [{ 
-        model: User, 
-        as: 'User',
-        attributes: ['id', 'first_name', 'last_name'] 
-      }],
-      order: [['createdAt', 'DESC']]
-    });
+  const reviews = await Review.findAll({
+    where: { product_id: productId },
+    include: [{ model: User, attributes: ['first_name', 'last_name'] }]
+  });
 
-    res.status(200).json({ success: true, count: reviews.length, data: reviews });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Serverda xatolik", error: error.message });
+  return ApiResponse.send(res, "Mahsulot sharhlari yuklandi", reviews);
+};
+
+// 3. Sharhni tahrirlash (PUT) 🆕
+exports.updateReview = async (req, res) => {
+  const { rating, comment } = req.body;
+  const { id } = req.params;
+
+  const review = await Review.findByPk(id);
+  if (!review) {
+    throw new AppError("Tahrirlash uchun sharh topilmadi", 404);
   }
+
+  // Faqat sharh egasi uni tahrirlay olishi shart 🔒
+  if (review.user_id !== req.user.id) {
+    throw new AppError("Siz faqat o'zingiz yozgan sharhni tahrirlashingiz mumkin", 403);
+  }
+
+  review.rating = rating !== undefined ? rating : review.rating;
+  review.comment = comment !== undefined ? comment : review.comment;
+
+  await review.save();
+
+  return ApiResponse.send(res, "Sharhingiz muvaffaqiyatli yangilandi! 🔄", review);
+};
+
+// 4. Sharhni o'chirish (DELETE) 🆕
+exports.deleteReview = async (req, res) => {
+  const { id } = req.params;
+
+  const review = await Review.findByPk(id);
+  if (!review) {
+    throw new AppError("O'chirish uchun sharh topilmadi", 404);
+  }
+
+  // Sharhni o'zi yozgan odam YOKI admin o'chira olishi mumkin 🔒
+  if (review.user_id !== req.user.id && req.user.role !== 'admin') {
+    throw new AppError("Bu sharhni o'chirish uchun sizda huquq yo'q", 403);
+  }
+
+  await review.destroy();
+
+  return ApiResponse.send(res, "Sharh muvaffaqiyatli o'chirildi! 🗑️");
 };

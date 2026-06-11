@@ -17,7 +17,8 @@ const ProductImage = sequelize.define('ProductImage', {
 
 // Dynamic munosabat o'rnatish funksiyasi
 ProductImage.associate = (models) => {
-  ProductImage.belongsTo(models.Product, { foreignKey: 'product_id' });
+  ProductImage.belongsTo(models.Product, 
+  { foreignKey: 'product_id' });
 };
 
 module.exports = ProductImage;
