@@ -43,3 +43,7 @@ export async function register({ name, email, password }) {
   localStorage.setItem("user", JSON.stringify(response.data.user));
   return response;
 }
+
+export function isAdmin() {
+  return getCurrentUser()?.role === "admin";
+}

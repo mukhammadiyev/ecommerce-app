@@ -1,15 +1,15 @@
-import { Navigate, Outlet } from "react-router-dom";
-import { getCurrentUser, isAuthenticated } from "../services/authService.js";
+import { Navigate } from "react-router-dom";
+import AdminLayout from "../layouts/AdminLayout.jsx";
+import { isAdmin, isAuthenticated } from "../services/authService.js";
 
 export default function AdminRoute() {
   if (!isAuthenticated()) {
     return <Navigate to="/login" replace />;
   }
-
-  const user = getCurrentUser();
-  if (user?.role !== "admin") {
+  if (!isAdmin()) {
     return <Navigate to="/" replace />;
   }
 
-  return <Outlet />;
+  // AdminLayout must render <Outlet /> inside it
+  return <AdminLayout />;
 }
