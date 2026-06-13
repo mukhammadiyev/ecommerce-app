@@ -30,6 +30,7 @@ const Contact = sequelize.define('Contact', {
 }, {
   tableName: 'contacts',
   timestamps: true,
+  underscored: true, // 🆕 Ustun nomlarini snake_case (created_at) qiladi
 });
 
 module.exports = Contact;

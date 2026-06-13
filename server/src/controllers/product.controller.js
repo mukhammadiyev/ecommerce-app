@@ -1,6 +1,5 @@
-const Product = require('../models/product');
-const ProductImage = require('../models/productimage');
-const Category = require('../models/category');
+// src/controllers/productController.js
+const { Product, ProductImage, Category, Review } = require('../models/associations'); // ⚙️ Modellar associations'dan olindi
 const { Op } = require('sequelize');
 const ApiResponse = require('../utils/response');
 const AppError = require('../utils/appError');
@@ -39,7 +38,7 @@ exports.createProduct = async (req, res) => {
   return ApiResponse.send(res, "Mahsulot va galereya muvaffaqiyatli saqlandi! 🚀", completeProduct, 201);
 };
 
-// 2. Barcha mahsulotlarni filtrlash va qidiruv bilan olish
+// 2. Barcha mahsulotlarni filtrlash va qidiruv bilan olish (To'g'rilandi ⚙️)
 exports.getAllProducts = async (req, res) => {
   const { search, minPrice, maxPrice, category_id, sortBy } = req.query;
   let whereCondition = {};
@@ -72,7 +71,8 @@ exports.getAllProducts = async (req, res) => {
     where: whereCondition,
     include: [
       { model: ProductImage, as: 'images', attributes: ['id', 'image_url'] },
-      { model: Category, as: 'category', attributes: ['id', 'name'] }
+      { model: Category, as: 'category', attributes: ['id', 'name'] },
+      { model: Review, as: 'product_reviews' } // ⚙️ 'ProductReviews' -> 'product_reviews' ga o'zgartirildi
     ],
     order: orderClause
   });
@@ -80,14 +80,15 @@ exports.getAllProducts = async (req, res) => {
   return ApiResponse.send(res, "Mahsulotlar ro'yxati yuklandi", products);
 };
 
-// 3. ID bo'yicha bitta mahsulotni olish
+// 3. ID bo'yicha bitta mahsulotni olish (To'g'rilandi ⚙️)
 exports.getProductById = async (req, res) => {
   const { id } = req.params;
 
   const product = await Product.findByPk(id, {
     include: [
       { model: ProductImage, as: 'images', attributes: ['id', 'image_url'] },
-      { model: Category, as: 'category', attributes: ['id', 'name'] }
+      { model: Category, as: 'category', attributes: ['id', 'name'] },
+      { model: Review, as: 'product_reviews' } // ⚙️ 'ProductReviews' -> 'product_reviews' ga o'zgartirildi
     ]
   });
 
@@ -109,17 +110,15 @@ exports.updateProduct = async (req, res) => {
     throw new AppError("Mahsulot topilmadi!", 404);
   }
 
-  // 🆕 Yangi asosiy rasm kelgan bo'lsa yangilaymiz
+  // Yangi asosiy rasm kelgan bo'lsa yangilaymiz
   if (req.files && req.files['image']) {
     product.image_url = req.files['image'][0].path;
   }
 
-  // 🆕 Yangi galereya rasmlari kelgan bo'lsa, eskilarni o'chirib yangilarini yozamiz
+  // Yangi galereya rasmlari kelgan bo'lsa
   if (req.files && req.files['gallery']) {
-    // Avvalgi galereya bog'lanishlarini o'chirish
     await ProductImage.destroy({ where: { product_id: id } });
     
-    // Yangilarini qo'shish
     const newImages = req.files['gallery'].map(file => ({
       product_id: id,
       image_url: file.path
@@ -135,7 +134,6 @@ exports.updateProduct = async (req, res) => {
 
   await product.save();
 
-  // Yangilangan to'liq ma'lumotni qaytarish
   const updatedProduct = await Product.findByPk(id, {
     include: [{ model: ProductImage, as: 'images', attributes: ['id', 'image_url'] }]
   });

@@ -1,28 +1,33 @@
-const Category = require('../models/category');
+const { Category } = require('../models/associations'); // ⚙️ Markaziy fayldan import qilamiz
 const ApiResponse = require('../utils/response');
 const AppError = require('../utils/appError');
 
 // 1. Barcha kategoriyalarni olish
 exports.getAllCategories = async (req, res) => {
-  const categories = await Category.findAll();
+  // Alifbo tartibida tartiblab olish frontend uchun ham qulay
+  const categories = await Category.findAll({ order: [['name', 'ASC']] });
   return ApiResponse.send(res, "Kategoriyalar ro'yxati keltirildi", categories);
 };
 
-// 2. Yangi kategoriya yaratish
+// 2. Yangi kategoriya yaratish (Rasm mantiqi olib tashlandi 🧹)
 exports.createCategory = async (req, res) => {
   const { name } = req.body;
-  
-  // 🆕 Agar rasm yuklangan bo'lsa, Cloudinary URL-ni olamiz, aks holda xatolik beramiz
-  if (!req.file) {
-    throw new AppError("Kategoriya uchun rasm yuklash shart!", 400);
-  }
-  const image_url = req.file.path; 
 
-  const newCategory = await Category.create({ name, image_url });
+  if (!name) {
+    throw new AppError("Kategoriya nomi (name) kiritilishi shart!", 400);
+  }
+
+  // Nom unikal bo'lgani uchun avval tekshiramiz
+  const existing = await Category.findOne({ where: { name } });
+  if (existing) {
+    throw new AppError("Bunday kategoriya allaqachon mavjud!", 400);
+  }
+
+  const newCategory = await Category.create({ name });
   return ApiResponse.send(res, "Kategoriya yaratildi! 📂", newCategory, 201);
 };
 
-// 3. Kategoriyani yangilash (PUT)
+// 3. Kategoriyani yangilash (PUT - Rasm mantiqi olib tashlandi 🧹)
 exports.updateCategory = async (req, res) => {
   const { name } = req.body;
   const { id } = req.params;
@@ -32,14 +37,16 @@ exports.updateCategory = async (req, res) => {
     throw new AppError("Tahrirlash uchun kategoriya topilmadi", 404);
   }
 
-  // 🆕 Agar yangi rasm yuklangan bo'lsa, uni yangilaymiz, aks holda eskisi qoladi
-  if (req.file) {
-    category.image_url = req.file.path;
+  // Agar yangi nom kelgan bo'lsa va u eskisidan farq qilsa, unikal mudofaa
+  if (name && name !== category.name) {
+    const existing = await Category.findOne({ where: { name } });
+    if (existing) {
+      throw new AppError("Bu nomdagi kategoriya allaqachon mavjud!", 400);
+    }
+    category.name = name;
   }
 
-  category.name = name || category.name;
   await category.save();
-
   return ApiResponse.send(res, "Kategoriya muvaffaqiyatli yangilandi! 🔄", category);
 };
 
@@ -53,5 +60,5 @@ exports.deleteCategory = async (req, res) => {
   }
 
   await category.destroy();
-  return ApiResponse.send(res, "Kategoriya muvaffaqiyatli o'chirildi! 🗑️");
+  return ApiResponse.send(res, "Kategoriya muvaffaqiyatli o'chirildi! 🗑️", null);
 };

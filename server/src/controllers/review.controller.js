@@ -1,5 +1,4 @@
-const Review = require('../models/Review');
-const User = require('../models/User');
+const { Review, User } = require('../models/associations'); // 🔥 To'g'ri va xavfsiz import
 const ApiResponse = require('../utils/response');
 const AppError = require('../utils/appError');
 
@@ -23,13 +22,13 @@ exports.getProductReviews = async (req, res) => {
 
   const reviews = await Review.findAll({
     where: { product_id: productId },
-    include: [{ model: User, attributes: ['first_name', 'last_name'] }]
+    include: [{ model: User, attributes: ['first_name', 'last_name'] }] // 🚀 Endi munosabat ishlaydi!
   });
 
   return ApiResponse.send(res, "Mahsulot sharhlari yuklandi", reviews);
 };
 
-// 3. Sharhni tahrirlash (PUT) 🆕
+// 3. Sharhni tahrirlash (PUT)
 exports.updateReview = async (req, res) => {
   const { rating, comment } = req.body;
   const { id } = req.params;
@@ -52,7 +51,7 @@ exports.updateReview = async (req, res) => {
   return ApiResponse.send(res, "Sharhingiz muvaffaqiyatli yangilandi! 🔄", review);
 };
 
-// 4. Sharhni o'chirish (DELETE) 🆕
+// 4. Sharhni o'chirish (DELETE)
 exports.deleteReview = async (req, res) => {
   const { id } = req.params;
 

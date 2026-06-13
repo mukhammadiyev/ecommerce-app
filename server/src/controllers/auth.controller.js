@@ -1,8 +1,8 @@
-const User = require('../models/user');
+const { User, Cart } = require('../models/associations'); // ⚙️ Markaziy fayldan import qilamiz (Cart ham qo'shildi)
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const AppError = require('../utils/appError');
-const ApiResponse = require('../utils/response'); // 🔥 Standart javob klassimiz ulandi
+const ApiResponse = require('../utils/response');
 
 // ==========================================
 // FOYDALANUVCHINI RO'YXATDAN O'TKAZISH
@@ -25,12 +25,14 @@ exports.register = async (req, res) => {
     password: hashedPassword,
     role: 'user'
   });
+
+  // 🆕 Yangi foydalanuvchi uchun avtomatik ravishda bo'sh savat yaratamiz
+  await Cart.create({ user_id: newUser.id });
   
   const userResponse = newUser.toJSON();
   delete userResponse.password;
 
-  // 🔥 Eski res.status(201).json(...) o'rniga qisqa va standart format
-  return ApiResponse.created(res, "Foydalanuvchi muvaffaqiyatli yaratildi! 🎉", userResponse);
+  return ApiResponse.created(res, "Foydalanuvchi muvaffaqiyatli yaratildi va savat ajratildi! 🎉", userResponse);
 };
 
 // ==========================================
@@ -58,7 +60,6 @@ exports.login = async (req, res) => {
   const userResponse = user.toJSON();
   delete userResponse.password;
 
-  // 🔥 Eski res.status(200).json(...) o'rniga token va user ma'lumotlarini bitta standartda qaytaramiz
   return ApiResponse.send(res, "Tizimga muvaffaqiyatli kirdingiz! 🔓", { 
     token, 
     user: userResponse 

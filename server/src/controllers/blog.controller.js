@@ -1,5 +1,4 @@
-const Blog = require('../models/Blog');
-const BlogImage = require('../models/BlogImage'); // 🆕 Yangi modelni chaqiramiz
+const { Blog, BlogImage } = require('../models/associations'); // ⚙️ Markaziy fayldan import qilamiz
 const ApiResponse = require('../utils/response');
 const AppError = require('../utils/appError');
 
@@ -7,7 +6,7 @@ const AppError = require('../utils/appError');
 exports.getAllBlogs = async (req, res) => {
   const blogs = await Blog.findAll({ 
     where: { is_published: true },
-    include: [{ model: BlogImage, as: 'images', attributes: ['id', 'image_url'] }] // 🆕 Rasmlarni qo'shib yuboramiz
+    include: [{ model: BlogImage, as: 'blog_images', attributes: ['id', 'image_url'] }] // 🆕 associations.js dagi aliasga o'zgartirildi
   });
   return ApiResponse.send(res, "Bloglar ro'yxati", blogs);
 };
@@ -15,7 +14,7 @@ exports.getAllBlogs = async (req, res) => {
 // 2. ID bo'yicha bitta blogni galereyasi bilan olish
 exports.getBlogById = async (req, res) => {
   const blog = await Blog.findByPk(req.params.id, {
-    include: [{ model: BlogImage, as: 'images', attributes: ['id', 'image_url'] }]
+    include: [{ model: BlogImage, as: 'blog_images', attributes: ['id', 'image_url'] }] // 🆕 alias to'g'rilandi
   });
   if (!blog) {
     throw new AppError("Blog topilmadi", 404);
@@ -42,14 +41,14 @@ exports.createBlog = async (req, res) => {
   // Blog va uning rasmlarini birdiga bazaga saqlash
   const newBlog = await Blog.create({
     title, content, image_url,
-    images: galleryData
+    blog_images: galleryData // 🆕 Model ichidagi massiv nomi ham aliasga mos bo'lishi kerak
   }, {
-    include: [{ model: BlogImage, as: 'images' }]
+    include: [{ model: BlogImage, as: 'blog_images' }] // 🆕 alias to'g'rilandi
   });
 
   // To'liq javobni qayta o'qib olish
   const completeBlog = await Blog.findByPk(newBlog.id, {
-    include: [{ model: BlogImage, as: 'images', attributes: ['id', 'image_url'] }]
+    include: [{ model: BlogImage, as: 'blog_images', attributes: ['id', 'image_url'] }]
   });
 
   return ApiResponse.send(res, "Yangi blog galereya bilan yaratildi 🚀", completeBlog, 201);
@@ -88,7 +87,7 @@ exports.updateBlog = async (req, res) => {
   await blog.save();
 
   const updatedBlog = await Blog.findByPk(id, {
-    include: [{ model: BlogImage, as: 'images', attributes: ['id', 'image_url'] }]
+    include: [{ model: BlogImage, as: 'blog_images', attributes: ['id', 'image_url'] }] // 🆕 alias to'g'rilandi
   });
 
   return ApiResponse.send(res, "Blog muvaffaqiyatli yangilandi! 📝", updatedBlog);
@@ -102,5 +101,5 @@ exports.deleteBlog = async (req, res) => {
   }
 
   await blog.destroy();
-  return ApiResponse.send(res, "Blog muvaffaqiyatli o'chirildi! 🗑️");
+  return ApiResponse.send(res, "Blog muvaffaqiyatli o'chirildi! 🗑️", null);
 };

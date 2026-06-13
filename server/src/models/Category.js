@@ -11,10 +11,6 @@ const Category = sequelize.define('Category', {
     type: DataTypes.STRING,
     allowNull: false,
     unique: true // Bir xil nomli kategoriya qayta ochilmasligi uchun
-  },
-  image_url: {
-    type: DataTypes.STRING,
-    allowNull: true // Figma bosh sahifasida kategoriyalar rasmlari bilan turibdi
   }
 }, {
   tableName: 'categories',

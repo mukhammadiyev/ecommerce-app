@@ -1,10 +1,5 @@
 const { sequelize } = require('../config/database');
-const Cart = require('../models/cart');      
-const CartItem = require('../models/cartitem'); 
-const Product = require('../models/product');
-const Order = require('../models/order');
-const OrderItem = require('../models/orderitem');
-const User = require('../models/user');
+const { Cart, CartItem, Product, Order, OrderItem, User } = require('../models/associations'); // ⚙️ Markaziy import
 const emailService = require('../services/email.service');
 const ApiResponse = require('../utils/response');
 const AppError = require('../utils/appError');
@@ -17,26 +12,30 @@ exports.createOrder = async (req, res) => {
 
   const cart = await Cart.findOne({
     where: { user_id: userId },
-    include: [{ model: CartItem, as: 'CartItems', include: [Product] }]
+    include: [{ 
+      model: CartItem, 
+      as: 'cart_items', // ⚙️ associations.js dagi alias bilan moslashtirildi
+      include: [{ model: Product, as: 'product' }] // ⚙️ Alias qo'shildi
+    }] 
   });
 
-  if (!cart || !cart.CartItems || cart.CartItems.length === 0) {
+  if (!cart || !cart.cart_items || cart.cart_items.length === 0) { 
     await transaction.rollback();
     throw new AppError("Savatchangiz bo'sh! Buyurtma berib bo'lmaydi.", 400);
   }
 
   let total_price = 0;
-  for (const item of cart.CartItems) { 
-    if (!item.Product) {
+  for (const item of cart.cart_items) { 
+    if (!item.product) {
       await transaction.rollback();
       throw new AppError("Savatdagi mahsulot tizimda topilmadi!", 400);
     }
     
-    if (item.Product.stock < item.quantity) {
+    if (item.product.stock < item.quantity) {
       await transaction.rollback();
-      throw new AppError(`Kechirasiz, "${item.Product.name}" mahsulotidan omborda yetarli emas. Qoldiq: ${item.Product.stock} ta`, 400);
+      throw new AppError(`Kechirasiz, "${item.product.name}" mahsulotidan omborda yetarli emas. Qoldiq: ${item.product.stock} ta`, 400);
     }
-    total_price += parseFloat(item.Product.price) * item.quantity;
+    total_price += parseFloat(item.product.price) * item.quantity;
   }
 
   const order = await Order.create({
@@ -47,20 +46,23 @@ exports.createOrder = async (req, res) => {
     status: 'pending'
   }, { transaction });
 
-  for (const item of cart.CartItems) { 
+  for (const item of cart.cart_items) { 
     await OrderItem.create({
       order_id: order.id,
       product_id: item.product_id,
       quantity: item.quantity,
-      price: item.Product.price
+      price: item.product.price
     }, { transaction });
 
-    await item.Product.decrement('stock', { by: item.quantity, transaction });
+    // Ombordagi qoldiqni kamaytiramiz
+    await item.product.decrement('stock', { by: item.quantity, transaction });
   }
 
+  // Savatni tozalaymiz
   await CartItem.destroy({ where: { cart_id: cart.id }, transaction });
   await transaction.commit();
 
+  // E-mail bildirishnomasi (Asosiy oqimga xalaqit bermasligi uchun try-catch ichida)
   try {
     const user = await User.findByPk(userId);
     if (user && emailService && typeof emailService.sendOrderInvoiceEmail === 'function') {
@@ -83,7 +85,8 @@ exports.getMyOrders = async (req, res) => {
     where: { user_id: userId },
     include: [{
       model: OrderItem,
-      include: [{ model: Product, attributes: ['id', 'name', 'price'] }]
+      as: 'order_items', // ⚙️ Alias snake_case ga o'tkazildi
+      include: [{ model: Product, as: 'product', attributes: ['id', 'name', 'price'] }]
     }],
     order: [['createdAt', 'DESC']]
   });
@@ -94,7 +97,11 @@ exports.getMyOrders = async (req, res) => {
 // 3. Admin barcha buyurtmalarni ko'rishi
 exports.getAllOrdersForAdmin = async (req, res) => {
   const orders = await Order.findAll({
-    include: [{ model: OrderItem, include: [Product] }],
+    include: [{ 
+      model: OrderItem, 
+      as: 'order_items', // ⚙️ Alias snake_case ga o'tkazildi
+      include: [{ model: Product, as: 'product' }] 
+    }], 
     order: [['createdAt', 'DESC']]
   });
   return ApiResponse.send(res, "Barcha buyurtmalar ro'yxati (Admin)", orders);
@@ -121,7 +128,7 @@ exports.updateOrderStatus = async (req, res) => {
   return ApiResponse.send(res, `Buyurtma statusi "${status}" ga o'zgartirildi!`, order);
 };
 
-// 5. Foydalanuvchi o'z buyurtmasini bekor qilishi (PUT) 🆕
+// 5. Foydalanuvchi o'z buyurtmasini bekor qilishi (PUT)
 exports.cancelMyOrder = async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;
@@ -131,7 +138,6 @@ exports.cancelMyOrder = async (req, res) => {
     throw new AppError("Buyurtma topilmadi!", 404);
   }
 
-  // Agar buyurtma allaqachon yo'lga chiqqan yoki yetkazilgan bo'lsa, uni bekor qilib bo'lmaydi
   if (order.status !== 'pending' && order.status !== 'processing') {
     throw new AppError("Bu buyurtmani endi bekor qilib bo'lmaydi, chunki u yo'lga chiqqan! 🚚", 400);
   }

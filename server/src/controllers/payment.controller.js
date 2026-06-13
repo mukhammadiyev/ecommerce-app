@@ -1,59 +1,71 @@
-const Payment = require('../models/payment'); // To'lov modeli nomi loyihangizga qarab o'zgarishi mumkin
-const Order = require('../models/order');
+const { Payment, Order, User } = require('../models/associations'); // ⚙️ Markaziy import
 const ApiResponse = require('../utils/response');
 const AppError = require('../utils/appError');
 
-// 1. To'lovni amalga oshirish (Mavjud funksiyangiz)
+// 1. Toʻlovni amalga oshirish
 exports.processPayment = async (req, res) => {
-  const { order_id, payment_method, amount } = req.body;
+  const { order_id, payment_method, card_number, amount } = req.body;
+  const userId = req.user.id;
 
-  const order = await Order.findByPk(order_id);
+  const order = await Order.findOne({ where: { id: order_id, user_id: userId } });
   if (!order) {
-    throw new AppError("To'lov qilinayotgan buyurtma topilmadi!", 404);
+    throw new AppError("Toʻlov qilinayotgan buyurtma topilmadi yoki sizga tegishli emas!", 404);
   }
 
-  // To'lovni bazada yaratish (Dastlab 'pending' yoki 'completed' bo'lishi mumkin)
+  // Karta raqamini maskalash
+  let card_mask = null;
+  if (card_number) {
+    card_mask = `${card_number.slice(0, 4)}****${card_number.slice(-4)}`;
+  }
+
+  // Toʻlovni bazada yaratish
   const payment = await Payment.create({
     order_id,
-    user_id: req.user.id,
-    payment_method, // 'click', 'payme', 'cash', 'card'
+    user_id: userId,
+    payment_method, 
+    card_mask,
     amount,
-    status: 'completed' // To'lov tizimi muvaffaqiyatli o'tdi deb hisoblaymiz
+    status: 'completed'
   });
 
-  // To'lov muvaffaqiyatli bo'lsa, tegishli buyurtma statusini ham yangilash mumkin
-  // order.status = 'processing'; 
-  // await order.save();
+  // Toʻlov muvaffaqiyatli boʻlgani uchun buyurtma statusini 'processing' (tayyorlanmoqda) ga oʻtkazamiz
+  order.status = 'processing'; 
+  await order.save();
 
-  return ApiResponse.send(res, "To'lov muvaffaqiyatli qabul qilindi! 💸", payment, 201);
+  // ⚙️ ApiResponse.created standarti ishlatildi
+  return ApiResponse.created(res, "Toʻlov muvaffaqiyatli qabul qilindi! 💸", payment);
 };
 
-// 2. Admin barcha to'lovlar tarixini ko'rishi (GET) 🆕
+// 2. Admin barcha toʻlovlar tarixini ko'rishi (GET)
 exports.getAllPaymentsForAdmin = async (req, res) => {
   const payments = await Payment.findAll({
+    include: [{ 
+      model: User, 
+      as: 'user', // ⚙️ associations.js dagi alias ulandi
+      attributes: ['first_name', 'last_name', 'email'] 
+    }],
     order: [['createdAt', 'DESC']]
   });
-  return ApiResponse.send(res, "Barcha to'lovlar ro'yxati (Admin)", payments);
+  return ApiResponse.send(res, "Barcha toʻlovlar roʻyxati (Admin)", payments);
 };
 
-// 3. Admin to'lov statusini o'zgartirishi (PUT) 🆕
-// Masalan: Naqd pulda to'lanadigan buyurtma kelganda yoki qaytarib berilganda (refund)
+// 3. Admin toʻlov statusini oʻzgartirishi (PUT)
 exports.updatePaymentStatus = async (req, res) => {
   const { id } = req.params;
-  const { status } = req.body; // 'pending', 'completed', 'failed', 'refunded'
+  const { status } = req.body; 
 
   const validStatuses = ['pending', 'completed', 'failed', 'refunded'];
   if (!validStatuses.includes(status)) {
-    throw new AppError("Noto'g'ri to'lov statusi yuborildi!", 400);
+    throw new AppError("Notoʻgʻri toʻlov statusi yuborildi!", 400);
   }
 
   const payment = await Payment.findByPk(id);
   if (!payment) {
-    throw new AppError("To'lov ma'lumoti topilmadi!", 404);
+    throw new AppError("Toʻlov maʼlumoti topilmadi!", 404);
   }
 
   payment.status = status;
   await payment.save();
 
-  return ApiResponse.send(res, `To'lov statusi "${status}" ga yangilandi! 🔄`, payment);
+  return ApiResponse.send(res, `Toʻlov statusi "${status}" ga yangilandi! 🔄`, payment);
 };
