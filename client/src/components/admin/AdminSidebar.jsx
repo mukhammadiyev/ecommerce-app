@@ -28,23 +28,16 @@ const NAV_GROUPS = [
     items: [
       { label: "Dashboard", icon: LayoutDashboard, to: "/admin" },
       { label: "Products", icon: Package, to: "/admin/products" },
-      { label: "Favorites", icon: Heart, to: "/admin/favorites" },
-      { label: "Inbox", icon: Inbox, to: "/admin/inbox", badge: 3 },
+      { label: "Inbox", icon: Inbox, to: "/admin/inbox", },
       { label: "Order Lists", icon: ListOrdered, to: "/admin/orders" },
-      { label: "Product Stock", icon: Boxes, to: "/admin/stock" },
     ],
   },
   {
     label: "PAGES",
     items: [
-      { label: "Pricing", icon: Tag, to: "/admin/pricing" },
       { label: "Calendar", icon: Calendar, to: "/admin/calendar" },
       { label: "To-Do", icon: CheckSquare, to: "/admin/todo" },
       { label: "Contact", icon: Phone, to: "/admin/contact" },
-      { label: "Invoice", icon: FileText, to: "/admin/invoice" },
-      { label: "UI Elements", icon: Layers, to: "/admin/ui" },
-      { label: "Team", icon: Users, to: "/admin/team" },
-      { label: "Table", icon: Table2, to: "/admin/table" },
     ],
   },
 ];

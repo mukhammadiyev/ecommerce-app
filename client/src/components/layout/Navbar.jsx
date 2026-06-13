@@ -72,7 +72,9 @@ function Navbar() {
               )}
             </div>
 
-            <FaBagShopping className="text-xl cursor-pointer" />
+            <Link to="/cart">
+              <FaBagShopping className="text-xl cursor-pointer" />
+            </Link>
           </div>
         </div>
       </div>
