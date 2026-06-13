@@ -4,13 +4,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 
 // ==========================================
-// 🆕 MODELLARNI RO'YXATDAN O'TKAZISH
-// ==========================================
-require('./models/Blog');      // Blog asosiy modeli
-require('./models/BlogImage'); // Blog galereya modeli (munosabatlar shakllanishi uchun)
-
-// ==========================================
-// ROUTERLARNI IMPORT QILISH
+// 🚀 ROUTERLARNI IMPORT QILISH (100% Rasmdagi nomlar bilan mos)
 // ==========================================
 const authRoutes = require('./routes/auth.routes');
 const productRoutes = require('./routes/products.routes');
@@ -19,13 +13,14 @@ const orderRoutes = require('./routes/orders.routes');
 const reviewRoutes = require('./routes/reviews.routes');
 const categoryRoutes = require('./routes/categories.routes');
 const userRoutes = require('./routes/users.routes');
-const blogRoutes = require('./routes/blogs.routes');
+const blogRoutes = require('./routes/blogs.routes'); 
 const addressRoutes = require('./routes/address.routes');
 const paymentRoutes = require('./routes/payments.routes');
 const contactRoutes = require('./routes/contacts.routes');
 const newsletterRoutes = require('./routes/newsletter.routes');
 const analyticsRoutes = require('./routes/analytics.routes'); 
 const invoicesRoutes = require('./routes/invoices.routes');   
+const emailRoutes = require('./routes/email.routes'); // 🆕 Rasmdagi email routeri qo'shildi
 
 const errorHandler = require('./middleware/errorHandler'); 
 const globalLimiter = require('./middleware/rateLimiter'); 
@@ -39,11 +34,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
-// DDoS va botlardan himoya qilish uchun hamma API so'rovlarini elakdan o'tkazamiz
+// DDoS himoyasi uchun limiter
 app.use('/api', globalLimiter);
 
 // ==========================================
-// API YO'NALISHLARI (ROUTERLAR)
+// 🛣️ API YO'NALISHLARI
 // ==========================================
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
@@ -59,7 +54,9 @@ app.use('/api/contacts', contactRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/analytics', analyticsRoutes); 
 app.use('/api/invoices', invoicesRoutes);   
+app.use('/api/email', emailRoutes); // 🆕 Email yo'li ulandi
 
+// Server holatini tekshirish
 app.get('/api/health', (req, res) => {
     res.status(200).json({
         success: true,

@@ -1,12 +1,12 @@
-const Contact = require('../models/Contact');
+const { Contact } = require('../models/associations'); // ⚙️ Markaziy fayldan import qilamiz
 const ApiResponse = require('../utils/response');
 const AppError = require('../utils/appError');
 
 // 1. Foydalanuvchidan kelgan xabarni saqlash
 exports.createContactMessage = async (req, res) => {
-  const { name, email, message } = req.body;
+  const { name, email, subject, message } = req.body; // 🆕 'subject' ham qo'shildi
 
-  const newMessage = await Contact.create({ name, email, message });
+  const newMessage = await Contact.create({ name, email, subject, message });
   return ApiResponse.send(res, "Xabaringiz adminga yetkazildi", newMessage, 201);
 };
 
@@ -16,7 +16,7 @@ exports.getAllMessagesForAdmin = async (req, res) => {
   return ApiResponse.send(res, "Barcha xabarlar ro'yxati (Admin)", messages);
 };
 
-// 3. Admin xabarlarni o'chirishi (DELETE) 🆕
+// 3. Admin xabarlarni o'chirishi (DELETE)
 exports.deleteMessage = async (req, res) => {
   const { id } = req.params;
 
@@ -27,5 +27,5 @@ exports.deleteMessage = async (req, res) => {
 
   await message.destroy();
 
-  return ApiResponse.send(res, "Xabar muvaffaqiyatli o'chirildi! 🗑️");
+  return ApiResponse.send(res, "Xabar muvaffaqiyatli o'chirildi! 🗑️", null);
 };

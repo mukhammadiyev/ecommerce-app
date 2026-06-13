@@ -11,7 +11,7 @@ const CartItem = sequelize.define('CartItem', {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'carts', // 'carts' jadvaliga bog'lanadi
+      model: 'carts',
       key: 'id'
     }
   },
@@ -19,7 +19,7 @@ const CartItem = sequelize.define('CartItem', {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'products', // 'products' jadvaliga bog'lanadi
+      model: 'products',
       key: 'id'
     }
   },
@@ -33,5 +33,7 @@ const CartItem = sequelize.define('CartItem', {
   timestamps: true,
   underscored: true
 });
+
+// ⚠️ BU YERDAN BOG'LANISHLARNI OLIB TASHLAREK! (Ular endi markazlashgan faylda bo'ladi)
 
 module.exports = CartItem;

@@ -3,18 +3,12 @@ const router = express.Router();
 const addressController = require('../controllers/address.controller');
 const authMiddleware = require('../middleware/auth');
 
-// VALIDATSIYA:
-const validate = require('../middleware/validation');
-const { addressSchema } = require('../validators/address.validator'); 
-
-// Barcha yo'llar faqat login qilgan foydalanuvchilar uchun 🔒
+// Hamma yo'llar login talab qiladi 🔒
 router.use(authMiddleware);
 
-router.get('/', addressController.getMyAddress);
-router.post('/save', validate(addressSchema), addressController.saveAddress);
-
-// Yangi qo'shilgan yo'llar 🆕
-router.put('/update', validate(addressSchema), addressController.updateAddress); // Manzilni yangilash
-router.delete('/delete', addressController.deleteAddress);                     // Manzilni o'chirish
+router.get('/me', addressController.getMyAddress);
+router.post('/', addressController.saveAddress);
+router.put('/', addressController.updateAddress);
+router.delete('/', addressController.deleteAddress);
 
 module.exports = router;

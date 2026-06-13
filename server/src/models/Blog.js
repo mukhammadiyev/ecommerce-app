@@ -17,13 +17,18 @@ const Blog = sequelize.define('Blog', {
   },
   image_url: {
     type: DataTypes.STRING,
-    allowNull: true // Maqola rasmi uchun
+    allowNull: true 
   },
-  author: {
-    type: DataTypes.STRING,
-    defaultValue: 'Oliver Bennett'
+  // Muallifni User jadvali bilan bog'lash uchun tashqi kalit maydoni
+  author_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    },
+    onDelete: 'SET NULL'
   },
-  // 🆕 Mana shu qismni model ichiga qo'shib qo'ying:
   is_published: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
@@ -31,7 +36,7 @@ const Blog = sequelize.define('Blog', {
 }, {
   tableName: 'blogs',
   timestamps: true,
-  underscored: true
+  underscored: true // createdAt -> created_at qilib bazaga yozadi
 });
 
 module.exports = Blog;

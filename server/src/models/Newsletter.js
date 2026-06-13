@@ -10,7 +10,7 @@ const Newsletter = sequelize.define('Newsletter', {
   email: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true, // Bir xil email ikki marta obuna bo'lolmaydi
+    unique: true, 
     validate: {
       isEmail: true,
     },
@@ -18,6 +18,7 @@ const Newsletter = sequelize.define('Newsletter', {
 }, {
   tableName: 'newsletters',
   timestamps: true,
+  underscored: true, // 🆕 Ustun nomlarini snake_case formatiga o'tkazadi
 });
 
 module.exports = Newsletter;

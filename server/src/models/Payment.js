@@ -15,20 +15,28 @@ const Payment = sequelize.define('Payment', {
       key: 'id'
     }
   },
-  card_name: {
+  user_id: { // 🆕 Kim toʻlov qilganini bilish uchun
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
+  },
+  payment_method: { // 🆕 'click', 'payme', 'card', 'cash'
     type: DataTypes.STRING,
     allowNull: false
   },
-  card_number: {
-    type: DataTypes.STRING, // To'liq saqlamaslik yoki oxirgi 4 raqamini saqlash tavsiya etiladi
-    allowNull: false
+  card_mask: { // 🔒 Xavfsizlik uchun toʻliq karta emas, faqat maskasi saqlanadi (masalan: 8600****1234)
+    type: DataTypes.STRING,
+    allowNull: true
   },
   amount: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false
   },
   status: {
-    type: DataTypes.ENUM('pending', 'completed', 'failed'),
+    type: DataTypes.ENUM('pending', 'completed', 'failed', 'refunded'), // 🆕 'refunded' qoʻshildi
     defaultValue: 'pending'
   }
 }, {

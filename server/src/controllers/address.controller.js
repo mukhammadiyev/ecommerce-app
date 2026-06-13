@@ -1,4 +1,4 @@
-const Address = require('../models/address');
+const { Address } = require('../models/associations'); // ⚙️ Markaziy import
 const ApiResponse = require('../utils/response');
 const AppError = require('../utils/appError');
 
@@ -18,8 +18,7 @@ exports.saveAddress = async (req, res) => {
   let address = await Address.findOne({ where: { user_id: userId } });
 
   if (address) {
-    // Agar manzil mavjud bo'lsa, xatolik beramiz yoki PUT ishlatishni so'raymiz
-    throw new AppError("Manzilingiz allaqachon mavjud, uni o'zgartirish uchun PUT so'rovini ishlating", 400);
+    throw new AppError("Manzilingiz allaqachon va'da qilingan, uni o'zgartirish uchun PUT so'rovini ishlating", 400);
   }
 
   address = await Address.create({
@@ -30,10 +29,11 @@ exports.saveAddress = async (req, res) => {
     postal_code
   });
 
-  return ApiResponse.send(res, "Yetkazib berish manzili muvaffaqiyatli saqlandi! 📍", address, 201);
+  // ⚙️ ApiResponse.created standarti ishlatildi
+  return ApiResponse.created(res, "Yetkazib berish manzili muvaffaqiyatli saqlandi! 📍", address);
 };
 
-// 3. Manzilni tahrirlash (PUT) 🆕
+// 3. Manzilni tahrirlash (PUT)
 exports.updateAddress = async (req, res) => {
   const userId = req.user.id;
   const { street_address, city, country, postal_code } = req.body;
@@ -49,11 +49,10 @@ exports.updateAddress = async (req, res) => {
   address.postal_code = postal_code !== undefined ? postal_code : address.postal_code;
 
   await address.save();
-
   return ApiResponse.send(res, "Manzil muvaffaqiyatli yangilandi! 🔄", address);
 };
 
-// 4. Manzilni o'chirish (DELETE) 🆕
+// 4. Manzilni o'chirish (DELETE)
 exports.deleteAddress = async (req, res) => {
   const userId = req.user.id;
 
@@ -63,6 +62,5 @@ exports.deleteAddress = async (req, res) => {
   }
 
   await address.destroy();
-
-  return ApiResponse.send(res, "Manzil muvaffaqiyatli o'chirildi! 🗑️");
+  return ApiResponse.send(res, "Manzil muvaffaqiyatli o'chirildi! 🗑️", null);
 };

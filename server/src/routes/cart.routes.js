@@ -5,14 +5,12 @@ const authMiddleware = require('../middleware/auth');
 const validate = require('../middleware/validation');
 const { cartSchema } = require('../validators/cart.validator');
 
-// Barcha yo'llar avtomatizatsiyalashgan holda login qilganlar uchun 🔒
+// Barcha yo'llar login qilgan foydalanuvchilar uchun 🔒
 router.use(authMiddleware);
 
 router.get('/', cartController.getCart);
 router.post('/add', validate(cartSchema), cartController.addToCart); 
-
-// Yangi qo'shilgan yo'llar 🆕
-router.put('/items/:id', cartController.updateCartItem);     // Savatdagi mahsulot miqdorini o'zgartirish
+router.put('/items/:id', cartController.updateCartItem);     // ⚙️ Controller funksiya nomi to'g'rilandi
 router.delete('/items/:id', cartController.removeFromCart);  // Savatdan mahsulotni o'chirish
 
 module.exports = router;
