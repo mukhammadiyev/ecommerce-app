@@ -38,7 +38,9 @@ function EyeIcon({ open }) {
 
 export default function Login() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ identifier: "", password: "" });
+  
+  // 🛠️ State nomini backend kutayotgan 'email' kalitiga moslashtirdik
+  const [form, setForm] = useState({ email: "", password: "" });
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -57,14 +59,12 @@ export default function Login() {
       { opacity: 0, y: 32, scale: 0.97 },
       { opacity: 1, y: 0, scale: 1, duration: 0.6 },
     )
-
       .fromTo(
         imageRef.current,
         { opacity: 0, x: 24 },
         { opacity: 1, x: 0, duration: 0.55 },
         "-=0.35",
       )
-
       .fromTo(
         formRef.current?.querySelectorAll(".anim-item"),
         { opacity: 0, y: 16 },
@@ -88,10 +88,21 @@ export default function Login() {
     };
 
     try {
-      await login(form.identifier, form.password);
-      navigate("/account");
-    } catch {
-      setError("Incorrect email or password. Please try again.");
+      // 🔥 XATOLIK TUZATILDI: Backend validatoriga aynan 'email' kalitida yuboramiz
+      const data = await login({ 
+        email: form.email, 
+        password: form.password 
+      });
+      
+      // Ro'lga qarab yo'naltirish
+      if (data && data.user?.role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/account"); 
+      }
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.message || "Incorrect email or password. Please try again.");
       shake();
     } finally {
       setLoading(false);
@@ -127,7 +138,7 @@ export default function Login() {
 
           {/* error banner */}
           {error && (
-            <div className="anim-item mb-5 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-600">
+            <div className="mb-5 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-600">
               {error}
             </div>
           )}
@@ -141,11 +152,12 @@ export default function Login() {
               <input
                 type="text"
                 placeholder="michael.joe@xmail.com"
-                value={form.identifier}
+                value={form.email}
                 onChange={(e) =>
-                  setForm((p) => ({ ...p, identifier: e.target.value }))
+                  setForm((p) => ({ ...p, email: e.target.value }))
                 }
                 className="w-full border border-gray-200 rounded-full px-5 py-3 text-sm text-[#1a1a2e] placeholder-gray-400 outline-none focus:border-[#1a1a2e] transition-colors"
+                required
               />
             </div>
 
@@ -163,6 +175,7 @@ export default function Login() {
                     setForm((p) => ({ ...p, password: e.target.value }))
                   }
                   className="w-full border border-gray-200 rounded-full px-5 py-3 pr-12 text-sm text-[#1a1a2e] placeholder-gray-400 outline-none focus:border-[#1a1a2e] transition-colors"
+                  required
                 />
                 <button
                   type="button"

@@ -16,8 +16,8 @@ import {
   Tag,
   Trash2,
   X,
-} from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+} from "lucide-react"
+import { useEffect, useRef, useState } from "react"
 
 // ── API helpers ──────────────────────────────────────────────────────
 const API = "/api";
@@ -239,6 +239,7 @@ function FormField({ label, icon: Icon, error, children }) {
   );
 }
 
+// ── InputField ────────────────────────────────────────────────────────
 function InputField({ className = "", ...props }) {
   return (
     <input
@@ -250,6 +251,7 @@ function InputField({ className = "", ...props }) {
   );
 }
 
+// ── SelectField ───────────────────────────────────────────────────────
 function SelectField({ children, ...props }) {
   return (
     <div className="relative">
@@ -575,8 +577,6 @@ function ProductModal({
                 <InputField
                   type="number"
                   placeholder="0"
-                  min="0"
-                  max="100"
                   value={form.discount}
                   onChange={(e) => set("discount", e.target.value)}
                 />
@@ -993,14 +993,6 @@ function ProductRow({ product, categories, onEdit, onDelete, index }) {
           {product.stock === 0 ? "Out of stock" : `${product.stock} left`}
         </span>
       </td>
-      {product.rating && (
-        <td className="py-3 px-4">
-          <div className="flex items-center gap-1">
-            <Star size={11} className="text-amber-400 fill-amber-400" />
-            <span className="text-xs text-white/50">{product.rating}</span>
-          </div>
-        </td>
-      )}
       <td className="py-3 px-4">
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
@@ -1030,7 +1022,8 @@ export default function AdminProducts() {
   const [catFilter, setCatFilter] = useState("");
   const [modal, setModal] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const [toast, setToast] = useState(null);
+  const [toast, setToast] = useState(null); // { message, type }
+  const [showGlobalCatModal, setShowGlobalCatModal] = useState(false);
 
   const headerRef = useRef(null);
 
@@ -1040,10 +1033,16 @@ export default function AdminProducts() {
       { y: -12, opacity: 0 },
       { y: 0, opacity: 1, duration: 0.4, ease: "power2.out" },
     );
-    Promise.all([apiFetch("/products"), apiFetch("/categories")])
-      .then(([prods, cats]) => {
-        setProducts(prods);
-        setCategories(cats);
+    Promise.all([
+      apiFetch("/products"),
+      apiFetch("/categories"),
+    ])
+      .then(([prodsRes, catsRes]) => {
+        const actualProducts = prodsRes?.data || prodsRes;
+        const actualCategories = catsRes?.data || catsRes;
+
+        setProducts(Array.isArray(actualProducts) ? actualProducts : []);
+        setCategories(Array.isArray(actualCategories) ? actualCategories : []);
       })
       .catch((e) => setToast({ message: e.message, type: "error" }))
       .finally(() => setLoading(false));
@@ -1051,255 +1050,173 @@ export default function AdminProducts() {
 
   const showToast = (message, type = "success") => setToast({ message, type });
 
-  const filtered = products.filter((p) => {
+  const filtered = (Array.isArray(products) ? products : []).filter((p) => {
+    if (!p || !p.name) return false;
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
     const matchCat = catFilter ? p.category_id === Number(catFilter) : true;
     return matchSearch && matchCat;
   });
 
   const handleSave = (saved) => {
-    setProducts((ps) =>
-      ps.find((p) => p.id === saved.id)
-        ? ps.map((p) => (p.id === saved.id ? saved : p))
-        : [...ps, saved],
-    );
-    showToast(saved.name + " saved");
+    const cleanSaved = saved?.data || saved;
+    if (!cleanSaved || !cleanSaved.id) return;
+
+    setProducts((ps) => {
+      const safePs = Array.isArray(ps) ? ps : [];
+      return safePs.find((p) => p.id === cleanSaved.id)
+        ? safePs.map((p) => (p.id === cleanSaved.id ? cleanSaved : p))
+        : [...safePs, cleanSaved];
+    });
+    showToast(cleanSaved.name + " saved");
   };
 
   const handleDelete = (id) => {
-    setProducts((ps) => ps.filter((p) => p.id !== id));
+    setProducts((ps) => (Array.isArray(ps) ? ps : []).filter((p) => p.id !== id));
     showToast("Product deleted");
   };
 
   const handleCategoryCreate = (cat) => {
-    setCategories((cs) => [...cs, cat]);
-    showToast(`Category "${cat.name}" created`);
+    const cleanCat = cat?.data || cat;
+    setCategories((cs) => [...(Array.isArray(cs) ? cs : []), cleanCat]);
+    showToast(`Category "${cleanCat.name}" created`);
   };
 
-  const totalValue = products.reduce(
-    (s, p) => s + Number(p.price) * p.stock,
-    0,
-  );
-  const outOfStock = products.filter((p) => p.stock === 0).length;
+  const safeProductsList = Array.isArray(products) ? products : [];
+  const totalValue = safeProductsList.reduce((s, p) => s + Number(p.price || 0) * (p.stock || 0), 0);
+  const outOfStock = safeProductsList.filter((p) => p.stock === 0).length;
 
   return (
-    <div className="space-y-5 pb-8">
-      {/* Header */}
-      <div
-        ref={headerRef}
-        className="flex items-center justify-between gap-3 flex-wrap"
-      >
-        <div>
-          <h1 className="text-xl font-bold text-white">Products</h1>
-          <p className="text-sm text-white/35 mt-0.5">
-            {loading ? "Loading…" : `${products.length} in catalog`}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => {
-              const name = window.prompt("Category name?");
-              if (!name?.trim()) return;
-              apiFetch("/categories", {
-                method: "POST",
-                body: JSON.stringify({
-                  name: name.trim(),
-                  slug: name.trim().toLowerCase().replace(/\s+/g, "-"),
-                }),
-              })
-                .then(handleCategoryCreate)
-                .catch((e) => showToast(e.message, "error"));
-            }}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[#1e2436] text-white/60 text-sm font-medium
-              border border-white/8 hover:text-white hover:bg-white/5 transition-all"
-          >
-            <FolderPlus size={15} />
-            <span className="hidden sm:inline">Category</span>
-          </button>
-          <button
-            onClick={() => setModal("add")}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#6c63ff] text-white text-sm font-semibold
-              hover:bg-[#5a52e0] active:scale-95 transition-all shadow-lg shadow-[#6c63ff]/25"
-          >
-            <Plus size={16} />
-            <span>Add product</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard
-          label="Total products"
-          value={products.length}
-          icon={Package}
-          color="bg-[#6c63ff]"
-        />
-        <StatCard
-          label="Categories"
-          value={categories.length}
-          icon={Tag}
-          color="bg-[#3b82f6]"
-        />
-        <StatCard
-          label="Out of stock"
-          value={outOfStock}
-          icon={AlertTriangle}
-          color="bg-[#ff6584]"
-        />
-        <StatCard
-          label="Catalog value"
-          value={formatPrice(totalValue)}
-          icon={DollarSign}
-          color="bg-emerald-500"
-        />
-      </div>
-
-      {/* Filters */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className="flex items-center gap-2 flex-1 min-w-35 h-10 px-3 rounded-xl bg-[#1e2436] border border-white/8 focus-within:border-[#6c63ff]/50 transition-colors">
-          <Search size={14} className="text-white/25 shrink-0" />
-          <input
-            type="text"
-            placeholder="Search…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="bg-transparent text-sm text-white placeholder-white/20 outline-none w-full"
-          />
-          {search && (
+    <div className="min-h-screen bg-[#0f121d] text-white/90 p-4 sm:p-6 lg:p-8 antialiased">
+      <div className="max-w-6xl mx-auto space-y-6">
+        
+        {/* Header Action Row */}
+        <div ref={headerRef} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-white sm:text-2xl">Products Inventory</h1>
+            <p className="text-xs text-white/30 mt-0.5">Manage stock, prices, adjustments and category bindings.</p>
+          </div>
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => setSearch("")}
-              className="text-white/25 hover:text-white/60 transition-colors"
+              onClick={() => setShowGlobalCatModal(true)}
+              className="h-10 px-4 rounded-xl border border-white/8 text-xs font-semibold hover:bg-white/5 transition-colors flex items-center gap-2"
             >
-              <X size={13} />
+              <FolderPlus size={14} className="text-white/40" />
+              <span>Add Category</span>
             </button>
-          )}
+            <button
+              onClick={() => setModal("add")}
+              className="h-10 px-4 rounded-xl bg-[#6c63ff] hover:bg-[#5a52e0] text-xs font-semibold shadow-lg shadow-[#6c63ff]/15 flex items-center gap-2 transition-all active:scale-[0.98]"
+            >
+              <Plus size={14} />
+              <span>Add Product</span>
+            </button>
+          </div>
         </div>
-        <div className="relative">
-          <select
-            value={catFilter}
-            onChange={(e) => setCatFilter(e.target.value)}
-            className="h-10 pl-3 pr-8 rounded-xl bg-[#1e2436] border border-white/8 text-sm text-white/60
-              outline-none focus:border-[#6c63ff]/50 appearance-none transition-colors cursor-pointer"
-          >
-            <option value="">All categories</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <ChevronDown
-            size={13}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 pointer-events-none"
-          />
-        </div>
-      </div>
 
-      {/* Content */}
-      {loading ? (
-        <Spinner />
-      ) : (
-        <>
-          {/* Mobile cards */}
-          <div className="flex flex-col gap-3 sm:hidden">
-            {filtered.length === 0 ? (
-              <div className="py-16 text-center">
-                <Package size={32} className="text-white/10 mx-auto mb-3" />
-                <p className="text-sm text-white/25">
-                  {search || catFilter
-                    ? "No products match your filters."
-                    : "No products yet. Add your first one."}
-                </p>
-              </div>
-            ) : (
-              filtered.map((p, i) => (
+        {/* Dynamic Analytics Counter Widgets */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <StatCard label="Total Items" value={safeProductsList.length} icon={Package} color="bg-indigo-500/10 text-indigo-400" />
+          <StatCard label="Total Value" value={formatPrice(totalValue)} icon={DollarSign} color="bg-emerald-500/10 text-emerald-400" />
+          <StatCard label="Out of Stock" value={outOfStock} icon={AlertTriangle} color={outOfStock > 0 ? "bg-rose-500/10 text-rose-400" : "bg-white/5 text-white/30"} />
+          <StatCard label="Categories" value={categories.length} icon={Tag} color="bg-blue-500/10 text-blue-400" />
+        </div>
+
+        {/* Searching & Quick Filters Controls bar */}
+        <div className="bg-[#1e2436] rounded-2xl border border-white/5 p-3 flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20" size={15} />
+            <input
+              type="text"
+              placeholder="Search by title, specs..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full h-10 pl-10 pr-4 rounded-xl bg-[#151929] border border-white/5 outline-none text-sm placeholder-white/25 focus:border-[#6c63ff]/40 transition-colors"
+            />
+          </div>
+          <div className="w-full sm:w-48">
+            <SelectField value={catFilter} onChange={(e) => setCatFilter(e.target.value)}>
+              <option value="">All Categories</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </SelectField>
+          </div>
+        </div>
+
+        {/* Dynamic Master-Detail Layout wrapper */}
+        {loading ? (
+          <Spinner />
+        ) : filtered.length === 0 ? (
+          <div className="bg-[#1e2436] rounded-2xl border border-white/5 py-16 text-center">
+            <Package size={32} className="mx-auto text-white/10 mb-3" />
+            <p className="text-sm text-white/40">No matching products matching parameters found</p>
+          </div>
+        ) : (
+          <>
+            {/* Viewport View 1: Mobile List Cards structure */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:hidden">
+              {filtered.map((item, idx) => (
                 <ProductCard
-                  key={p.id}
-                  product={p}
+                  key={item.id || idx}
+                  product={item}
                   categories={categories}
-                  index={i}
                   onEdit={(p) => setModal(p)}
                   onDelete={(p) => setDeleteTarget(p)}
+                  index={idx}
                 />
-              ))
-            )}
-          </div>
+              ))}
+            </div>
 
-          {/* Desktop table */}
-          <div className="hidden sm:block bg-[#1e2436] rounded-2xl border border-white/5 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-white/5">
-                    {[
-                      "Product",
-                      "Category",
-                      "Price",
-                      "Stock",
-                      "Rating",
-                      "",
-                    ].map((h) => (
-                      <th
-                        key={h}
-                        className="text-left py-3 px-4 text-[11px] font-semibold text-white/25 uppercase tracking-wider"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="py-16 text-center">
-                        <Package
-                          size={32}
-                          className="text-white/10 mx-auto mb-3"
-                        />
-                        <p className="text-sm text-white/25">
-                          {search || catFilter
-                            ? "No products match your filters."
-                            : "No products yet."}
-                        </p>
-                      </td>
+            {/* Viewport View 2: Desktop Tabular Grid framework representation */}
+            <div className="hidden sm:block bg-[#1e2436] rounded-2xl border border-white/5 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-white/5 bg-white/[0.01] text-[11px] font-semibold text-white/30 uppercase tracking-wider">
+                      <th className="py-3.5 px-4">Item Details</th>
+                      <th className="py-3.5 px-4">Category</th>
+                      <th className="py-3.5 px-4">Pricing</th>
+                      <th className="py-3.5 px-4">Availability status</th>
+                      <th className="py-3.5 px-4 w-16"></th>
                     </tr>
-                  ) : (
-                    filtered.map((p, i) => (
+                  </thead>
+                  <tbody>
+                    {filtered.map((item, idx) => (
                       <ProductRow
-                        key={p.id}
-                        product={p}
+                        key={item.id || idx}
+                        product={item}
                         categories={categories}
-                        index={i}
                         onEdit={(p) => setModal(p)}
                         onDelete={(p) => setDeleteTarget(p)}
+                        index={idx}
                       />
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-            {filtered.length > 0 && (
-              <div className="px-5 py-3 border-t border-white/5">
-                <p className="text-xs text-white/25">
-                  Showing {filtered.length} of {products.length} products
-                </p>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            )}
-          </div>
-        </>
-      )}
+            </div>
+          </>
+        )}
+      </div>
 
-      {/* Modals */}
+      {/* Global Portals, Overlay and Dialog systems instantiation */}
       {modal && (
         <ProductModal
           product={modal === "add" ? null : modal}
           categories={categories}
           onSave={handleSave}
-          onClose={() => setModal(null)}
           onCategoryCreate={handleCategoryCreate}
+          onClose={() => setModal(null)}
         />
       )}
+
+      {showGlobalCatModal && (
+        <CategoryModal
+          onSave={handleCategoryCreate}
+          onClose={() => setShowGlobalCatModal(false)}
+        />
+      )}
+
       {deleteTarget && (
         <DeleteConfirm
           product={deleteTarget}
@@ -1307,6 +1224,7 @@ export default function AdminProducts() {
           onClose={() => setDeleteTarget(null)}
         />
       )}
+
       {toast && (
         <Toast
           message={toast.message}

@@ -3,45 +3,63 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const AppError = require('../utils/appError');
 const ApiResponse = require('../utils/response');
+const { Op } = require('sequelize'); // 🔥 Sequelize operatorini qidiruv uchun chaqiramiz
 
 // ==========================================
 // FOYDALANUVCHINI RO'YXATDAN O'TKAZISH
 // ==========================================
-exports.register = async (req, res) => {
-  const { first_name, last_name, email, password } = req.body;
-  
-  const existingUser = await User.findOne({ where: { email } });
-  if (existingUser) {
-    throw new AppError("Bu email bilan allaqachon ro'yxatdan o'tilgan!", 400);
+exports.register = async (req, res, next) => {
+  try {
+    // 1. Request'dan faqat kerakli maydonlarni ajratib olamiz
+    const { name, email, password } = req.body;
+
+    // 2. Email band emasligini tekshiramiz
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Bu email manziliga ochilgan akkaunt allaqachon mavjud!" 
+      });
+    }
+
+    // 3. Parolni shifrlaymiz
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // 4. Bazaga yangi foydalanuvchini faqat 'name' bilan saqlaymiz
+    const newUser = await User.create({
+      name, // <--- first_name va last_name o'rniga bitta 'name'
+      email,
+      password: hashedPassword
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Ro'yxatdan muvaffaqiyatli o'tdingiz! 🎉",
+      user: { id: newUser.id, name: newUser.name, email: newUser.email }
+    });
+
+  } catch (error) {
+    next(error); // global error handlerga yuborish
   }
-
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
-  
-  const newUser = await User.create({ 
-    first_name, 
-    last_name, 
-    email, 
-    password: hashedPassword,
-    role: 'user'
-  });
-
-  // 🆕 Yangi foydalanuvchi uchun avtomatik ravishda bo'sh savat yaratamiz
-  await Cart.create({ user_id: newUser.id });
-  
-  const userResponse = newUser.toJSON();
-  delete userResponse.password;
-
-  return ApiResponse.created(res, "Foydalanuvchi muvaffaqiyatli yaratildi va savat ajratildi! 🎉", userResponse);
 };
 
 // ==========================================
-// TIZIMGA KIRISH (LOGIN)
+// TIZIMGA KIRISH (LOGIN) - TO'G'RILANGAN VERSUYA
 // ==========================================
 exports.login = async (req, res) => {
+  // 🔄 Frontenddan endi aniq 'email' va 'password' kelyapti
   const { email, password } = req.body;
   
-  const user = await User.findOne({ where: { email } });
+  if (!email || !password) {
+    throw new AppError("Email va parol kiritilishi shart!", 400);
+  }
+
+  // 🔍 Bazadan faqat kelayotgan 'email' ustuni bo'yicha qidiramiz
+  const user = await User.findOne({ 
+    where: { email: email } 
+  });
+
   if (!user) {
     throw new AppError("Bunday emailga ega foydalanuvchi topilmadi!", 444);
   }

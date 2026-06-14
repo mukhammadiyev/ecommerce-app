@@ -30,8 +30,11 @@ const app = express();
 // Xavfsizlik va yordamchi middleware'lar
 app.use(helmet());
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+// 🔥 TUZATILDI: Base64 rasmlar sig'ishi uchun limit 50mb ga oshirildi
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
 app.use(morgan('dev'));
 
 // DDoS himoyasi uchun limiter
