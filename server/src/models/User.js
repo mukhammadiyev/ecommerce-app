@@ -7,13 +7,16 @@ const User = sequelize.define('User', {
     autoIncrement: true,
     primaryKey: true
   },
-  first_name: {
-    type: DataTypes.STRING(50),
+  // 🔥 TUZATILDI: first_name va last_name o'rniga bitta majburiy 'name' maydoni qo'shildi
+  name: {
+    type: DataTypes.STRING(100),
     allowNull: false
   },
+  // 💡 Ixtiyoriy: Agar bazada eski ma'lumotlar bo'lsa xato bermasligi uchun 
+  // last_name'ni ixtiyoriy (allowNull: true) qilib qo'yamiz
   last_name: {
     type: DataTypes.STRING(50),
-    allowNull: false
+    allowNull: true
   },
   email: {
     type: DataTypes.STRING(100),
@@ -38,7 +41,7 @@ const User = sequelize.define('User', {
 }, {
   tableName: 'users',
   timestamps: true,
-  underscored: true // database-da snake_case (createdat, updated_at) qiladi
+  underscored: true // database-da snake_case (created_at, updated_at) qiladi
 });
 
 module.exports = User;

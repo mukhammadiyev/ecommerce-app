@@ -2,18 +2,31 @@ import { env } from "../config/env.js";
 import { mockAdmin, mockRequest, mockUser } from "../mocks/index.js";
 import api from "./api.js";
 
-export async function login(email, password) {
+// Login funksiyasini obyekt qabul qiladigan qilamiz
+export async function login({ identifier, password }) {
   if (env.useMock) {
-    const user = email.includes("admin") ? mockAdmin : mockUser;
+    const user = identifier.includes("admin") ? mockAdmin : mockUser;
     const token = `mock-token-${user.id}`;
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(user));
     return mockRequest({ data: { user, token } });
   }
-  const response = await api.post("/auth/login", { email, password });
-  localStorage.setItem("token", response.data.token);
-  localStorage.setItem("user", JSON.stringify(response.data.user));
-  return response;
+
+  // 🔥 DIQQAT: Backend faqat 'email' kutayotgan bo'lsa, 
+  // frontenddagi 'identifier'ni 'email' kalitiga o'tkazib yuboramiz!
+  const response = await api.post("/auth/login", { 
+    email: identifier, 
+    password: password 
+  });
+  
+  // Backend ApiResponse.send orqali ma'lumot qaytarsa, u .data ichida bo'ladi
+  const responseData = response.data?.data || response.data;
+
+  if (responseData && responseData.token) {
+    localStorage.setItem("token", responseData.token);
+    localStorage.setItem("user", JSON.stringify(responseData.user));
+  }
+  return responseData; 
 }
 
 export function logout() {
@@ -23,7 +36,11 @@ export function logout() {
 
 export function getCurrentUser() {
   const raw = localStorage.getItem("user");
-  return raw ? JSON.parse(raw) : null;
+  try {
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
 }
 
 export function isAuthenticated() {
@@ -38,10 +55,21 @@ export async function register({ name, email, password }) {
     localStorage.setItem("user", JSON.stringify(user));
     return mockRequest({ data: { user, token } });
   }
-  const response = await api.post("/auth/register", { name, email, password });
-  localStorage.setItem("token", response.data.token);
-  localStorage.setItem("user", JSON.stringify(response.data.user));
-  return response;
+
+  // 🔥 Backend aynan 'name' deb kutmoqda, ortiqcha first_name/last_name larni olib tashlaymiz!
+  const response = await api.post("/auth/register", { 
+    name, 
+    email, 
+    password 
+  });
+  
+  const responseData = response.data?.data || response.data;
+
+  if (responseData && responseData.token) {
+    localStorage.setItem("token", responseData.token);
+    localStorage.setItem("user", JSON.stringify(responseData.user));
+  }
+  return responseData;
 }
 
 export function isAdmin() {

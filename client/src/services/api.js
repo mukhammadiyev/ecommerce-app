@@ -1,13 +1,14 @@
 import axios from "axios";
-import { env } from "../config/env.js";
 
 const api = axios.create({
-  baseURL: env.apiUrl,
+  // Agar .env fayl topilmasa, zaxira sifatida http://localhost:5000/api portini ulaydi
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
   headers: {
     "Content-Type": "application/json",
   },
 });
 
+// Har safar so'rov ketayotganda tokenni birga yuborish interceptori
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {

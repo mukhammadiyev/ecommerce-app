@@ -64,14 +64,12 @@ export default function Register() {
       { opacity: 0, y: 32, scale: 0.97 },
       { opacity: 1, y: 0, scale: 1, duration: 0.6 },
     )
-
       .fromTo(
         imageRef.current,
         { opacity: 0, x: 24 },
         { opacity: 1, x: 0, duration: 0.55 },
         "-=0.35",
       )
-
       .fromTo(
         formRef.current?.querySelectorAll(".anim-item"),
         { opacity: 0, y: 16 },
@@ -96,14 +94,19 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validate();
-    if (Object.keys(errs).length) {
-      setErrors(errs);
-      /* shake */
+    
+    /* shake animation function */
+    const shake = () => {
       gsap.fromTo(
         cardRef.current,
         { x: -8 },
         { x: 0, duration: 0.4, ease: "elastic.out(1, 0.3)" },
       );
+    };
+
+    if (Object.keys(errs).length) {
+      setErrors(errs);
+      shake();
       return;
     }
 
@@ -111,19 +114,20 @@ export default function Register() {
     setLoading(true);
 
     try {
+      // Ma'lumotlar to'g'ri formatda yuborilmoqda
       await register({
-        name: form.fullName,
-        email: form.email,
+        name: form.fullName.trim(),
+        email: form.email.toLowerCase().trim(),
         password: form.password,
       });
+      
       navigate("/login");
-    } catch {
-      setErrors({ submit: "Could not create account. Please try again." });
-      gsap.fromTo(
-        cardRef.current,
-        { x: -8 },
-        { x: 0, duration: 0.4, ease: "elastic.out(1, 0.3)" },
-      );
+    } catch (err) {
+      console.error(err);
+      setErrors({ 
+        submit: err.response?.data?.message || "Could not create account. Please try again." 
+      });
+      shake();
     } finally {
       setLoading(false);
     }
@@ -160,7 +164,7 @@ export default function Register() {
 
           {/* global error */}
           {errors.submit && (
-            <div className="anim-item mb-5 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-600">
+            <div className="mb-5 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-600">
               {errors.submit}
             </div>
           )}
@@ -174,7 +178,8 @@ export default function Register() {
                 </label>
                 <input
                   type="text"
-                  placeholder="michael.joe"
+                  name="fullName"
+                  placeholder="John Doe"
                   value={form.fullName}
                   onChange={(e) => field("fullName", e.target.value)}
                   className={`w-full border rounded-full px-5 py-3 text-sm text-[#1a1a2e] placeholder-gray-400 outline-none transition-colors
@@ -193,6 +198,7 @@ export default function Register() {
                 </label>
                 <input
                   type="email"
+                  name="email"
                   placeholder="michael.joe@xmail.com"
                   value={form.email}
                   onChange={(e) => field("email", e.target.value)}
@@ -216,6 +222,7 @@ export default function Register() {
                 <div className="relative">
                   <input
                     type={showPw ? "text" : "password"}
+                    name="password"
                     placeholder="••••••"
                     value={form.password}
                     onChange={(e) => field("password", e.target.value)}
@@ -245,6 +252,7 @@ export default function Register() {
                 <div className="relative">
                   <input
                     type={showConfirm ? "text" : "password"}
+                    name="confirmPassword"
                     placeholder="••••••"
                     value={form.confirmPassword}
                     onChange={(e) => field("confirmPassword", e.target.value)}
