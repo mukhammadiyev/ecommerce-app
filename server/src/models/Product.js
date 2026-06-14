@@ -19,7 +19,12 @@ const Product = sequelize.define('Product', {
       model: 'categories', // 'categories' jadvaliga bog'lanadi
       key: 'id'
     }
-  }
+  },
+    discount: { 
+    type: DataTypes.INTEGER, 
+    defaultValue: 0, // Agar chegirma kiritilmasa, o'zi avtomat 0 bo'ladi
+    allowNull: true 
+  },
 }, { 
   tableName: 'products',
   timestamps: true,

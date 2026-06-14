@@ -1,28 +1,31 @@
-// src/controllers/productController.js
-const { Product, ProductImage, Category, Review } = require('../models/associations'); // ⚙️ Modellar associations'dan olindi
+const { Product, ProductImage, Category, Review } = require('../models/associations'); 
 const { Op } = require('sequelize');
 const ApiResponse = require('../utils/response');
 const AppError = require('../utils/appError');
 
-// 1. Yangi mahsulot yaratish (Bulutli rasm yuklash bilan)
+// 1. Yangi mahsulot yaratish (Bulutli rasm yuklash va DISCOUNT bilan) ✅
 exports.createProduct = async (req, res) => {
-  const { name, description, price, stock, category_id } = req.body;
+  const { name, description, price, stock, category_id, discount } = req.body;
 
-  // 🆕 Asosiy rasm yuklanganini tekshirish
   if (!req.files || !req.files['image']) {
     throw new AppError("Mahsulotning asosiy rasmini ('image') yuklash shart!", 400);
   }
-  const image_url = req.files['image'][0].path; // Cloudinary URL
+  const image_url = req.files['image'][0].path; 
 
-  // 🆕 Galereya rasmlarini yig'ish (agar yuklangan bo'lsa)
   let imagesData = [];
   if (req.files['gallery']) {
     imagesData = req.files['gallery'].map(file => ({ image_url: file.path }));
   }
 
-  // Mahsulotni bazaga yozish
+  // Mahsulotni bazaga yozish (stock majburiy raqamga o'girildi)
   const newProduct = await Product.create({
-    name, description, price, stock, image_url, category_id,
+    name, 
+    description, 
+    price, 
+    stock: stock ? parseInt(stock) : 0, // 🔥 Xavfsiz raqam formati
+    image_url, 
+    category_id,
+    discount: discount ? parseInt(discount) : 0, 
     images: imagesData
   }, {
     include: [{ model: ProductImage, as: 'images' }]
@@ -38,7 +41,7 @@ exports.createProduct = async (req, res) => {
   return ApiResponse.send(res, "Mahsulot va galereya muvaffaqiyatli saqlandi! 🚀", completeProduct, 201);
 };
 
-// 2. Barcha mahsulotlarni filtrlash va qidiruv bilan olish (To'g'rilandi ⚙️)
+// 2. Barcha mahsulotlarni filtrlash va qidiruv bilan olish
 exports.getAllProducts = async (req, res) => {
   const { search, minPrice, maxPrice, category_id, sortBy } = req.query;
   let whereCondition = {};
@@ -69,10 +72,11 @@ exports.getAllProducts = async (req, res) => {
 
   const products = await Product.findAll({
     where: whereCondition,
+    attributes: ['id', 'name', 'description', 'price', 'stock', 'image_url', 'discount', 'category_id'],
     include: [
       { model: ProductImage, as: 'images', attributes: ['id', 'image_url'] },
       { model: Category, as: 'category', attributes: ['id', 'name'] },
-      { model: Review, as: 'product_reviews' } // ⚙️ 'ProductReviews' -> 'product_reviews' ga o'zgartirildi
+      { model: Review, as: 'product_reviews' } 
     ],
     order: orderClause
   });
@@ -80,15 +84,16 @@ exports.getAllProducts = async (req, res) => {
   return ApiResponse.send(res, "Mahsulotlar ro'yxati yuklandi", products);
 };
 
-// 3. ID bo'yicha bitta mahsulotni olish (To'g'rilandi ⚙️)
+// 3. ID bo'yicha bitta mahsulotni olish (Dublikat olib tashlandi, attributes saqlandi! 🚀)
 exports.getProductById = async (req, res) => {
   const { id } = req.params;
 
   const product = await Product.findByPk(id, {
+    attributes: ['id', 'name', 'description', 'price', 'stock', 'image_url', 'discount', 'category_id'],
     include: [
       { model: ProductImage, as: 'images', attributes: ['id', 'image_url'] },
       { model: Category, as: 'category', attributes: ['id', 'name'] },
-      { model: Review, as: 'product_reviews' } // ⚙️ 'ProductReviews' -> 'product_reviews' ga o'zgartirildi
+      { model: Review, as: 'product_reviews' } 
     ]
   });
 
@@ -99,10 +104,10 @@ exports.getProductById = async (req, res) => {
   return ApiResponse.send(res, "Mahsulot topildi", product);
 };
 
-// 4. Mahsulotni tahrirlash (PUT) 🔄
+// 4. Mahsulotni tahrirlash (PUT)
 exports.updateProduct = async (req, res) => {
   const { id } = req.params;
-  const { name, description, price, stock, category_id } = req.body;
+  const { name, description, price, stock, category_id, discount } = req.body;
 
   const product = await Product.findByPk(id);
   
@@ -110,12 +115,10 @@ exports.updateProduct = async (req, res) => {
     throw new AppError("Mahsulot topilmadi!", 404);
   }
 
-  // Yangi asosiy rasm kelgan bo'lsa yangilaymiz
   if (req.files && req.files['image']) {
     product.image_url = req.files['image'][0].path;
   }
 
-  // Yangi galereya rasmlari kelgan bo'lsa
   if (req.files && req.files['gallery']) {
     await ProductImage.destroy({ where: { product_id: id } });
     
@@ -129,8 +132,9 @@ exports.updateProduct = async (req, res) => {
   product.name = name !== undefined ? name : product.name;
   product.description = description !== undefined ? description : product.description;
   product.price = price !== undefined ? price : product.price;
-  product.stock = stock !== undefined ? stock : product.stock;
+  product.stock = stock !== undefined ? parseInt(stock) : product.stock; // 🔥 Tahrirlanganda ham raqam qilinadi
   product.category_id = category_id !== undefined ? category_id : product.category_id;
+  product.discount = discount !== undefined ? parseInt(discount) : product.discount;
 
   await product.save();
 
@@ -141,7 +145,7 @@ exports.updateProduct = async (req, res) => {
   return ApiResponse.send(res, "Mahsulot muvaffaqiyatli yangilandi! 🆙", updatedProduct);
 };
 
-// 5. Mahsulotni o'chirish (DELETE)
+// 5. Mahsulotni o'chirish
 exports.deleteProduct = async (req, res) => {
   const { id } = req.params;
 

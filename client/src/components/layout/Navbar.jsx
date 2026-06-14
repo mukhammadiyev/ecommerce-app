@@ -2,9 +2,13 @@ import { useState } from "react";
 import { FaBagShopping, FaUserLarge } from "react-icons/fa6";
 import { Link } from "react-router-dom";
 import Logo from "../../../public/logo.png";
+import useCartStore from "../../hooks/useCartStore.js";
 
 function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const cartCount = useCartStore((state) =>
+    state.items.reduce((sum, i) => sum + i.quantity, 0),
+  );
 
   return (
     <nav className="w-full sticky top-0 z-100 bg-white">
@@ -28,7 +32,7 @@ function Navbar() {
               </a>
             </li>
             <li>
-              <a href="/products" className="font-oxygen text-base">
+              <a href="/blogs" className="font-oxygen text-base">
                 Blog
               </a>
             </li>
@@ -67,13 +71,18 @@ function Navbar() {
                   >
                     Account Settings
                   </Link>
-                  {/* Add more links here as needed */}
                 </div>
               )}
             </div>
 
-            <Link to="/cart">
+            {/* Cart icon with badge */}
+            <Link to="/cart" className="relative">
               <FaBagShopping className="text-xl cursor-pointer" />
+              {cartCount > 0 && (
+                <span className="absolute -top-2 -right-2 min-w-4.5 h-4.5 px-1 flex items-center justify-center rounded-full bg-[#1a1a2e] text-white text-[10px] font-bold leading-none">
+                  {cartCount > 99 ? "99+" : cartCount}
+                </span>
+              )}
             </Link>
           </div>
         </div>

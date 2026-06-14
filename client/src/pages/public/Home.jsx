@@ -129,7 +129,22 @@ export default function Home({
 
   useEffect(() => {
     getProducts()
-      .then((response) => setProducts(response.data.slice(0, 4)))
+      .then((response) => {
+        // Backend'dan kelayotgan ma'lumot qayerda ekanligini xavfsiz tekshiramiz
+        const actualData = response?.data?.data || response?.data?.products || response?.data;
+
+        // Agar haqiqatan ham massiv bo'lsa, kesib olamiz, aks holda bo'sh massiv beramiz
+        if (Array.isArray(actualData)) {
+          setProducts(actualData.slice(0, 4));
+        } else {
+          console.warn("Backend'dan massiv kutilgandi, lekin boshqa narsa keldi:", actualData);
+          setProducts([]);
+        }
+      })
+      .catch((error) => {
+        console.error("Bosh sahifada mahsulotlarni yuklashda xatolik:", error);
+        setProducts([]);
+      })
       .finally(() => setLoading(false));
   }, []);
 

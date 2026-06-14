@@ -19,6 +19,7 @@ import {
   Tag,
   Users,
   Zap,
+  BookOpen
 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { NavLink, useLocation } from "react-router-dom";
@@ -28,20 +29,13 @@ const NAV_GROUPS = [
     items: [
       { label: "Dashboard", icon: LayoutDashboard, to: "/admin" },
       { label: "Products", icon: Package, to: "/admin/products" },
-      { label: "Inbox", icon: Inbox, to: "/admin/inbox", },
+      { label: "Inbox", icon: Inbox, to: "/admin/inbox" },
+      { label: "Blogs", icon: BookOpen, to: "/admin/blogs" }, // ✅ To'g'rilandi
       { label: "Order Lists", icon: ListOrdered, to: "/admin/orders" },
     ],
   },
-  {
-    label: "PAGES",
-    items: [
-      { label: "Calendar", icon: Calendar, to: "/admin/calendar" },
-      { label: "To-Do", icon: CheckSquare, to: "/admin/todo" },
-      { label: "Contact", icon: Phone, to: "/admin/contact" },
-    ],
-  },
+  // ... qolgan guruhlar
 ];
-
 const BOTTOM_ITEMS = [
   { label: "Settings", icon: Settings, to: "/admin/settings" },
   { label: "Logout", icon: LogOut, to: "/logout", danger: true },

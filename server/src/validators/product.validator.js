@@ -5,9 +5,10 @@ exports.productSchema = Joi.object({
   price: Joi.number().positive().required(),
   stock: Joi.number().integer().min(0).required(),
   description: Joi.string().trim().allow('', null),
-  category_id: Joi.number().integer().required(),
-  image_url: Joi.string().uri().allow('', null),
+  category_id: Joi.number().integer().required(), // 💡 Diqqat: Bu yerda raqam (Integer) talab qilingan!
   
-  // MANA SHU QATORNI QO'SHAMIZ:
-  images: Joi.array().items(Joi.string().uri()).optional()
+  // 🛠️ 'image_url' o'rniga shunchaki 'image' qilamiz:
+  image: Joi.string().trim().required(), // yoki rasm majburiy bo'lsa .required(), ixtiyoriy bo'lsa .allow('', null)
+  
+  images: Joi.array().items(Joi.string().trim()).optional() // Base64 rasm ketsa .uri() xato berishi mumkin, shuning uchun .string().trim() ma'qul
 });

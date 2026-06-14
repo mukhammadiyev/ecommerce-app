@@ -2,20 +2,21 @@ import { gsap } from "gsap";
 import { useRef } from "react";
 import { FaPlus } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import useCartStore from "../../hooks/useCartStore";
 
 export default function ProductCard({
-  id, // ← added
+  id,
   image,
   name,
   discount,
   href,
   price,
-  originalPrice,
-  onAddToCart = () => {},
+  stock,
 }) {
   const cardRef = useRef(null);
   const imgRef = useRef(null);
   const navigate = useNavigate();
+  const addToCart = useCartStore((state) => state.addToCart);
 
   const handleMouseMove = (e) => {
     const card = cardRef.current;
@@ -54,9 +55,41 @@ export default function ProductCard({
     });
   };
 
-  const computedOriginal =
-    originalPrice ??
-    (discount ? parseFloat((price / (1 - discount / 100)).toFixed(2)) : null);
+  const originalPriceNumber = Number(price) || 0;
+  const discountPercent = Number(discount) || 0;
+  const hasDiscount = discountPercent > 0;
+
+  const finalPrice = hasDiscount
+    ? originalPriceNumber * (1 - discountPercent / 100)
+    : originalPriceNumber;
+  // 🔥 TO'G'RILANDI: Ichma-ich funksiya ochilishi tozalab tashlandi!
+  const handleAddToCart = (e) => {
+    e.stopPropagation();
+
+    // Tugma bosilganda animatsiya ishlashi uchun
+    gsap.fromTo(
+      e.currentTarget,
+      { scale: 0.8 },
+      { scale: 1, ease: "back.out(2)", duration: 0.35 },
+    );
+
+    // Xavfsiz qiymatlarni shakllantirib olamiz
+    const safeStock = stock !== undefined ? Number(stock) : 10;
+
+    const cartProduct = {
+      id: id,
+      name: name,
+      price: finalPrice,          // Chegirmali yakuniy narx
+      image: image,              // Front-end kutayotgan rasm (image)
+      image_url: image,          // Xavfsizlik uchun ikkalasini ham yuboramiz
+      stock: safeStock,          // Ombordagi real soni
+      discount: Number(discount) || 0
+    };
+
+
+    // Store-ga qo'shish endi aniq ishlaydi!
+    addToCart(cartProduct);
+  };
 
   return (
     <div
@@ -69,9 +102,9 @@ export default function ProductCard({
     >
       {/* Image container */}
       <div className="relative w-full h-44 sm:h-56 md:h-64 lg:h-72 xl:h-80 rounded-2xl bg-[#9e9e9e] overflow-hidden">
-        {discount && (
+        {hasDiscount && (
           <span className="absolute top-3 left-3 bg-[#2d2d2d] text-white text-[11px] font-semibold px-2.5 py-1 rounded-full z-10 select-none">
-            -{discount}%
+            -{discountPercent}%
           </span>
         )}
         {image ? (
@@ -92,28 +125,22 @@ export default function ProductCard({
           {name}
         </h3>
 
+        <span className="text-xs text-gray-400">Qoldiq: {stock !== undefined ? stock : 0} ta</span>
+
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 sm:gap-2">
-            {computedOriginal && (
+            {hasDiscount && (
               <span className="text-xs sm:text-sm text-gray-400 line-through">
-                ${computedOriginal.toFixed(2)}
+                ${originalPriceNumber.toFixed(2)}
               </span>
             )}
             <span className="text-xs sm:text-sm font-bold text-[#1a1a2e]">
-              ${typeof price === "number" ? price.toFixed(2) : price}
+              ${finalPrice.toFixed(2)}
             </span>
           </div>
 
           <button
-            onClick={(e) => {
-              e.stopPropagation(); // ← prevents card navigation
-              gsap.fromTo(
-                e.currentTarget,
-                { scale: 0.8 },
-                { scale: 1, ease: "back.out(2)", duration: 0.35 },
-              );
-              onAddToCart(); // ← called once only
-            }}
+            onClick={handleAddToCart}
             aria-label={`Add ${name} to cart`}
             className="flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full border border-gray-300 text-gray-600 hover:bg-[#1a1a2e] hover:text-white hover:border-[#1a1a2e] transition-colors shrink-0"
           >

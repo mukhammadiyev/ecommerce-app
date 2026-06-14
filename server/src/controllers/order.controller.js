@@ -1,5 +1,5 @@
 const { sequelize } = require('../config/database');
-const { Cart, CartItem, Product, Order, OrderItem, User } = require('../models/associations'); // ⚙️ Markaziy import
+const { Cart, CartItem, Product, Order, OrderItem, User } = require('../models/associations'); 
 const emailService = require('../services/email.service');
 const ApiResponse = require('../utils/response');
 const AppError = require('../utils/appError');
@@ -14,8 +14,8 @@ exports.createOrder = async (req, res) => {
     where: { user_id: userId },
     include: [{ 
       model: CartItem, 
-      as: 'cart_items', // ⚙️ associations.js dagi alias bilan moslashtirildi
-      include: [{ model: Product, as: 'product' }] // ⚙️ Alias qo'shildi
+      as: 'cart_items', 
+      include: [{ model: Product, as: 'product' }] 
     }] 
   });
 
@@ -54,15 +54,13 @@ exports.createOrder = async (req, res) => {
       price: item.product.price
     }, { transaction });
 
-    // Ombordagi qoldiqni kamaytiramiz
+    // Ombordagi qoldiqni kamaytiramiz (Muvaffaqiyatli ishlaydi)
     await item.product.decrement('stock', { by: item.quantity, transaction });
   }
 
-  // Savatni tozalaymiz
   await CartItem.destroy({ where: { cart_id: cart.id }, transaction });
   await transaction.commit();
 
-  // E-mail bildirishnomasi (Asosiy oqimga xalaqit bermasligi uchun try-catch ichida)
   try {
     const user = await User.findByPk(userId);
     if (user && emailService && typeof emailService.sendOrderInvoiceEmail === 'function') {
@@ -85,7 +83,7 @@ exports.getMyOrders = async (req, res) => {
     where: { user_id: userId },
     include: [{
       model: OrderItem,
-      as: 'order_items', // ⚙️ Alias snake_case ga o'tkazildi
+      as: 'order_items', 
       include: [{ model: Product, as: 'product', attributes: ['id', 'name', 'price'] }]
     }],
     order: [['createdAt', 'DESC']]
@@ -99,7 +97,7 @@ exports.getAllOrdersForAdmin = async (req, res) => {
   const orders = await Order.findAll({
     include: [{ 
       model: OrderItem, 
-      as: 'order_items', // ⚙️ Alias snake_case ga o'tkazildi
+      as: 'order_items', 
       include: [{ model: Product, as: 'product' }] 
     }], 
     order: [['createdAt', 'DESC']]
@@ -117,13 +115,34 @@ exports.updateOrderStatus = async (req, res) => {
     throw new AppError("Noto'g'ri status yuborildi!", 400);
   }
 
-  const order = await Order.findByPk(id);
+  const order = await Order.findByPk(id, {
+    include: [{ model: OrderItem, as: 'order_items', include: [{ model: Product, as: 'product' }] }]
+  });
+  
   if (!order) {
     throw new AppError("Buyurtma topilmadi!", 404);
   }
 
-  order.status = status;
-  await order.save();
+  // 🔥 Yangilik: Agar admin buyurtmani bekor qilsa, mahsulotlarni omborga qaytaramiz
+  if (status === 'cancelled' && order.status !== 'cancelled') {
+    const transaction = await sequelize.transaction();
+    try {
+      for (const item of order.order_items) {
+        if (item.product) {
+          await item.product.increment('stock', { by: item.quantity, transaction });
+        }
+      }
+      order.status = status;
+      await order.save({ transaction });
+      await transaction.commit();
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
+  } else {
+    order.status = status;
+    await order.save();
+  }
 
   return ApiResponse.send(res, `Buyurtma statusi "${status}" ga o'zgartirildi!`, order);
 };
@@ -133,17 +152,38 @@ exports.cancelMyOrder = async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;
 
-  const order = await Order.findOne({ where: { id, user_id: userId } });
+  const order = await Order.findOne({ 
+    where: { id, user_id: userId },
+    include: [{ model: OrderItem, as: 'order_items', include: [{ model: Product, as: 'product' }] }]
+  });
+
   if (!order) {
     throw new AppError("Buyurtma topilmadi!", 404);
+  }
+
+  if (order.status === 'cancelled') {
+    throw new AppError("Bu buyurtma allaqachon bekor qilingan!", 400);
   }
 
   if (order.status !== 'pending' && order.status !== 'processing') {
     throw new AppError("Bu buyurtmani endi bekor qilib bo'lmaydi, chunki u yo'lga chiqqan! 🚚", 400);
   }
 
-  order.status = 'cancelled';
-  await order.save();
+  // 🔥 Yangilik: Foydalanuvchi buyurtmani bekor qilsa, narsalar omborga qaytadi
+  const transaction = await sequelize.transaction();
+  try {
+    for (const item of order.order_items) {
+      if (item.product) {
+        await item.product.increment('stock', { by: item.quantity, transaction });
+      }
+    }
+    order.status = 'cancelled';
+    await order.save({ transaction });
+    await transaction.commit();
+  } catch (err) {
+    await transaction.rollback();
+    throw err;
+  }
 
   return ApiResponse.send(res, "Buyurtmangiz muvaffaqiyatli bekor qilindi! ❌", order);
 };

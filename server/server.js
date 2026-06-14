@@ -3,7 +3,6 @@ const app = require('./src/app');
 const { sequelize, connectDB } = require('./src/config/database');
 
 require('./src/models/associations'); 
-
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
