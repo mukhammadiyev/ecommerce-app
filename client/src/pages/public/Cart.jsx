@@ -2,38 +2,11 @@ import { gsap } from "gsap";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ProductGrid from "../../components/product/ProductGrid";
+import useCartStore from "../../hooks/useCartStore.js"; // ← adjust path if needed
 
-const initialItems = [
-  {
-    id: 1,
-    name: "Double Bed & Dressing",
-    price: 180,
-    quantity: 1,
-    image: null,
-  },
-  {
-    id: 2,
-    name: "Double Bed & Dressing",
-    price: 180,
-    quantity: 1,
-    image: null,
-  },
-  {
-    id: 3,
-    name: "Double Bed & Dressing",
-    price: 180,
-    quantity: 1,
-    image: null,
-  },
-  {
-    id: 4,
-    name: "Double Bed & Dressing",
-    price: 180,
-    quantity: 1,
-    image: null,
-  },
-];
-
+// ─────────────────────────────────────────────
+// CartItem — unchanged visually, reads from store
+// ─────────────────────────────────────────────
 function CartItem({ item, onRemove, onQuantityChange, index }) {
   const rowRef = useRef(null);
 
@@ -149,10 +122,9 @@ function CartItem({ item, onRemove, onQuantityChange, index }) {
       ref={rowRef}
       className="border-b border-gray-100 last:border-b-0 overflow-hidden"
     >
-      {/* ── MOBILE layout (below sm) ── */}
+      {/* ── MOBILE ── */}
       <div className="sm:hidden py-4">
         <div className="flex gap-3">
-          {/* Remove */}
           <button
             onClick={handleRemove}
             aria-label="Remove item"
@@ -167,33 +139,25 @@ function CartItem({ item, onRemove, onQuantityChange, index }) {
               />
             </svg>
           </button>
-
           <Thumbnail />
-
-          {/* Name + price */}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-gray-800 leading-snug">
               {item.name}
             </p>
             <p className="text-sm text-gray-400 mt-0.5">${item.price}</p>
           </div>
-
-          {/* Line total */}
           <div className="shrink-0 text-sm font-bold text-gray-900 self-start mt-0.5">
-            ${item.price * item.quantity}
+            ${(item.price * item.quantity).toFixed(2)}
           </div>
         </div>
-
-        {/* Qty row */}
         <div className="flex items-center justify-between mt-3 pl-9">
           <span className="text-xs text-gray-400">Quantity</span>
           <QtyControl size="sm" />
         </div>
       </div>
 
-      {/* ── DESKTOP layout (sm and above) ── */}
+      {/* ── DESKTOP ── */}
       <div className="hidden sm:flex items-center gap-4 py-4">
-        {/* Remove */}
         <button
           onClick={handleRemove}
           aria-label="Remove item"
@@ -208,35 +172,33 @@ function CartItem({ item, onRemove, onQuantityChange, index }) {
             />
           </svg>
         </button>
-
         <Thumbnail />
-
-        {/* Name */}
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-gray-800">{item.name}</p>
         </div>
-
-        {/* Price */}
         <div className="w-16 text-center text-sm text-gray-500 shrink-0">
-          ${item.price}
+          ${typeof item.price === "number" ? item.price.toFixed(2) : item.price}
         </div>
-
-        {/* Qty */}
         <div className="shrink-0">
           <QtyControl size="md" />
         </div>
-
-        {/* Total */}
         <div className="w-16 text-right text-sm font-semibold text-gray-800 shrink-0">
-          ${item.price * item.quantity}
+          ${(item.price * item.quantity).toFixed(2)}
         </div>
       </div>
     </div>
   );
 }
 
+// ─────────────────────────────────────────────
+// Cart page
+// ─────────────────────────────────────────────
 export default function Cart() {
-  const [items, setItems] = useState(initialItems);
+  // ← Pull everything from the store
+  const items = useCartStore((state) => state.items);
+  const removeFromCart = useCartStore((state) => state.removeFromCart);
+  const updateQuantity = useCartStore((state) => state.updateQuantity);
+
   const [discountInput, setDiscountInput] = useState("");
   const [discountMsg, setDiscountMsg] = useState("");
   const [appliedDiscount, setAppliedDiscount] = useState(null);
@@ -273,12 +235,15 @@ export default function Cart() {
     );
   }, [items, appliedDiscount]);
 
-  const handleRemove = (id) =>
-    setItems((prev) => prev.filter((i) => i.id !== id));
-  const handleQuantityChange = (id, qty) =>
-    setItems((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, quantity: qty } : i)),
-    );
+  useEffect(() => {
+    if (items.length === 0 && emptyRef.current) {
+      gsap.fromTo(
+        emptyRef.current,
+        { opacity: 0, scale: 0.88 },
+        { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(1.4)" },
+      );
+    }
+  }, [items.length]);
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const discountAmount = appliedDiscount
@@ -306,6 +271,7 @@ export default function Cart() {
   };
 
   const handleCheckout = () => {
+    navigate("/checkout");
     setCheckoutClicked(true);
     gsap.to(btnRef.current, {
       scale: 0.97,
@@ -314,16 +280,6 @@ export default function Cart() {
       repeat: 1,
     });
   };
-
-  useEffect(() => {
-    if (items.length === 0 && emptyRef.current) {
-      gsap.fromTo(
-        emptyRef.current,
-        { opacity: 0, scale: 0.88 },
-        { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(1.4)" },
-      );
-    }
-  }, [items.length]);
 
   return (
     <div className="min-h-screen">
@@ -354,9 +310,7 @@ export default function Cart() {
               Looks like you haven't added anything yet.
             </p>
             <button
-              onClick={() => {
-                navigate("/products");
-              }}
+              onClick={() => navigate("/products")}
               className="bg-gray-900 text-white text-sm font-medium px-6 py-3 rounded-full hover:bg-gray-700 active:scale-95 transition-all duration-200"
             >
               Continue Shopping
@@ -364,9 +318,9 @@ export default function Cart() {
           </div>
         ) : (
           <div className="flex flex-col lg:flex-row gap-5 xl:gap-6 items-start">
-            {/* ── Left: Items panel ── */}
+            {/* ── Items panel ── */}
             <div className="w-full lg:flex-1 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-              {/* Desktop table header */}
+              {/* Desktop header */}
               <div className="hidden sm:flex items-center gap-4 px-5 py-3 lg:py-6 bg-[#A6A6A6] border-b border-gray-200">
                 <div className="w-7 shrink-0" />
                 <div className="w-14 shrink-0" />
@@ -383,7 +337,6 @@ export default function Cart() {
                   Total
                 </span>
               </div>
-
               {/* Mobile header */}
               <div className="sm:hidden px-4 py-3 bg-[#A6A6A6] border-b border-gray-200">
                 <span className="text-xs font-semibold text-white uppercase tracking-wider">
@@ -391,15 +344,15 @@ export default function Cart() {
                 </span>
               </div>
 
-              {/* Items */}
+              {/* Items list */}
               <div className="px-4 sm:px-5">
                 {items.map((item, i) => (
                   <CartItem
                     key={item.id}
                     item={item}
                     index={i}
-                    onRemove={handleRemove}
-                    onQuantityChange={handleQuantityChange}
+                    onRemove={removeFromCart} // ← store action
+                    onQuantityChange={updateQuantity} // ← store action
                   />
                 ))}
               </div>
@@ -416,9 +369,7 @@ export default function Cart() {
                   />
                 </svg>
                 <button
-                  onClick={() => {
-                    navigate("/products");
-                  }}
+                  onClick={() => navigate("/products")}
                   className="text-sm"
                 >
                   Continue Shopping
@@ -426,7 +377,7 @@ export default function Cart() {
               </div>
             </div>
 
-            {/* ── Right: Summary panel ── */}
+            {/* ── Summary panel ── */}
             <div
               ref={summaryRef}
               className="w-full lg:w-80 xl:w-84 shrink-0 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
@@ -442,20 +393,18 @@ export default function Cart() {
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                   <span className="text-sm text-gray-500">Subtotal</span>
                   <span className="text-sm font-medium text-gray-800">
-                    ${subtotal}
+                    ${subtotal.toFixed(2)}
                   </span>
                 </div>
-
                 {/* Discount */}
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                   <span className="text-sm text-gray-500">Discount</span>
                   <span
                     className={`text-sm font-medium ${discountAmount > 0 ? "text-green-600" : "text-gray-400"}`}
                   >
-                    {discountAmount > 0 ? `−$${discountAmount}` : "—"}
+                    {discountAmount > 0 ? `-$${discountAmount}` : "—"}
                   </span>
                 </div>
-
                 {/* Discount code */}
                 <div className="space-y-2">
                   <div className="flex gap-2">
@@ -485,7 +434,6 @@ export default function Cart() {
                   )}
                   <p className="text-xs text-gray-400">Try SAVE10 or SAVE20</p>
                 </div>
-
                 {/* Total */}
                 <div
                   ref={totalRef}
@@ -495,10 +443,9 @@ export default function Cart() {
                     Total
                   </span>
                   <span className="text-xl font-bold text-gray-900">
-                    ${total}
+                    ${total.toFixed(2)}
                   </span>
                 </div>
-
                 {/* CTA */}
                 <button
                   ref={btnRef}

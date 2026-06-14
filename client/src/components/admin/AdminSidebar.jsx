@@ -19,6 +19,7 @@ import {
   Tag,
   Users,
   Zap,
+  BookOpen
 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { NavLink, useLocation } from "react-router-dom";
@@ -29,6 +30,7 @@ const NAV_GROUPS = [
       { label: "Dashboard", icon: LayoutDashboard, to: "/admin" },
       { label: "Products", icon: Package, to: "/admin/products" },
       { label: "Inbox", icon: Inbox, to: "/admin/inbox", },
+      { label: "Blogs", icon: BookOpen, to: "/admin/blogs" },
       { label: "Order Lists", icon: ListOrdered, to: "/admin/orders" },
     ],
   },
