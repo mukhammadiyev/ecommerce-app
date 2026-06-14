@@ -2,20 +2,21 @@ import { gsap } from "gsap";
 import { useRef } from "react";
 import { FaPlus } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import useCartStore from "../../hooks/useCartStore.js"; // ← adjust path if needed
 
 export default function ProductCard({
-  id, // ← added
+  id,
   image,
   name,
   discount,
   href,
   price,
   originalPrice,
-  onAddToCart = () => {},
 }) {
   const cardRef = useRef(null);
   const imgRef = useRef(null);
   const navigate = useNavigate();
+  const addToCart = useCartStore((state) => state.addToCart);
 
   const handleMouseMove = (e) => {
     const card = cardRef.current;
@@ -57,6 +58,20 @@ export default function ProductCard({
   const computedOriginal =
     originalPrice ??
     (discount ? parseFloat((price / (1 - discount / 100)).toFixed(2)) : null);
+
+  const handleAddToCart = (e) => {
+    e.stopPropagation();
+
+    // Button pop animation
+    gsap.fromTo(
+      e.currentTarget,
+      { scale: 0.8 },
+      { scale: 1, ease: "back.out(2)", duration: 0.35 },
+    );
+
+    // Add to Zustand store (persisted to localStorage)
+    addToCart({ id, name, price, image, discount });
+  };
 
   return (
     <div
@@ -105,15 +120,7 @@ export default function ProductCard({
           </div>
 
           <button
-            onClick={(e) => {
-              e.stopPropagation(); // ← prevents card navigation
-              gsap.fromTo(
-                e.currentTarget,
-                { scale: 0.8 },
-                { scale: 1, ease: "back.out(2)", duration: 0.35 },
-              );
-              onAddToCart(); // ← called once only
-            }}
+            onClick={handleAddToCart}
             aria-label={`Add ${name} to cart`}
             className="flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full border border-gray-300 text-gray-600 hover:bg-[#1a1a2e] hover:text-white hover:border-[#1a1a2e] transition-colors shrink-0"
           >

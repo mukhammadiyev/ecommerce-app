@@ -9,6 +9,7 @@ import Inbox from "../pages/admin/Inbox.jsx";
 import Login from "../pages/auth/Login.jsx";
 import Register from "../pages/auth/Register.jsx";
 import Cart from "../pages/public/Cart.jsx";
+import Checkout from "../pages/public/Checkout.jsx";
 import Contact from "../pages/public/Contact.jsx";
 import Home from "../pages/public/Home.jsx";
 import NotFound from "../pages/public/NotFound.jsx";
@@ -16,6 +17,7 @@ import ProductDetails from "../pages/public/ProductDetails.jsx";
 import Products from "../pages/public/Products.jsx";
 import AdminRoute from "./AdminRoute.jsx";
 import ProtectedRoute from "./ProtectedRoute.jsx";
+import Blogs from '../pages/public/Blogs.jsx'
 
 const router = createBrowserRouter([
   {
@@ -26,9 +28,11 @@ const router = createBrowserRouter([
       { path: "products", element: <Products /> },
       { path: "products/:id", element: <ProductDetails /> },
       { path: "cart", element: <Cart /> },
+      { path: "checkout", element: <Checkout /> },
       { path: "contact", element: <Contact /> },
       { path: "login", element: <Login /> },
       { path: "register", element: <Register /> },
+      { path: "blogs", element: <Blogs /> },
       {
         path: "account",
         element: <ProtectedRoute />,
