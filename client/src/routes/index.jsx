@@ -5,6 +5,7 @@ import PaymentBilling from "../pages/account/PaymentBilling.jsx";
 import Settings from "../pages/account/Settings.jsx";
 import AdminProducts from "../pages/admin/AdminProducts.jsx";
 import Dashboard from "../pages/admin/Dashboard.jsx";
+import AdminBlogs from "../pages/admin/AdminBlogs.jsx";
 import Inbox from "../pages/admin/Inbox.jsx";
 import Login from "../pages/auth/Login.jsx";
 import Register from "../pages/auth/Register.jsx";
@@ -69,6 +70,10 @@ const router = createBrowserRouter([
       {
         path: "inbox",
         element: <Inbox />,
+      },
+      {
+        path: "blogs",
+        element: <AdminBlogs />,
       },
       { path: "*", element: <NotFound /> },
     ],

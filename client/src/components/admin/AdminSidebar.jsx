@@ -29,8 +29,13 @@ const NAV_GROUPS = [
     items: [
       { label: "Dashboard", icon: LayoutDashboard, to: "/admin" },
       { label: "Products", icon: Package, to: "/admin/products" },
+<<<<<<< HEAD
       { label: "Inbox", icon: Inbox, to: "/admin/inbox" },
       { label: "Blogs", icon: BookOpen, to: "/admin/blogs" }, // ✅ To'g'rilandi
+=======
+      { label: "Inbox", icon: Inbox, to: "/admin/inbox", },
+      { label: "Blogs", icon: BookOpen, to: "/admin/blogs" },
+>>>>>>> 52806c2ac64e568a43b4fe4eeaf6db095a2dee81
       { label: "Order Lists", icon: ListOrdered, to: "/admin/orders" },
     ],
   },
