@@ -20,6 +20,8 @@ export default function ProductCard({
 
   const handleMouseMove = (e) => {
     const card = cardRef.current;
+    if (!card) return; // 🛡 Crashga qarshi himoya
+
     const rect = card.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width - 0.5;
     const y = (e.clientY - rect.top) / rect.height - 0.5;
@@ -32,29 +34,36 @@ export default function ProductCard({
       duration: 0.4,
     });
 
-    gsap.to(imgRef.current, {
-      x: x * -12,
-      y: y * -8,
-      ease: "power2.out",
-      duration: 0.5,
-    });
+    if (imgRef.current) {
+      gsap.to(imgRef.current, {
+        x: x * -12,
+        y: y * -8,
+        ease: "power2.out",
+        duration: 0.5,
+      });
+    }
   };
 
   const handleMouseLeave = () => {
-    gsap.to(cardRef.current, {
-      rotateY: 0,
-      rotateX: 0,
-      ease: "elastic.out(1, 0.5)",
-      duration: 0.8,
-    });
-    gsap.to(imgRef.current, {
-      x: 0,
-      y: 0,
-      ease: "power2.out",
-      duration: 0.5,
-    });
+    if (cardRef.current) {
+      gsap.to(cardRef.current, {
+        rotateY: 0,
+        rotateX: 0,
+        ease: "elastic.out(1, 0.5)",
+        duration: 0.8,
+      });
+    }
+    if (imgRef.current) {
+      gsap.to(imgRef.current, {
+        x: 0,
+        y: 0,
+        ease: "power2.out",
+        duration: 0.5,
+      });
+    }
   };
 
+  // Narx va chegirma hisob-kitoblari (Sizning asl matematikangiz saqlandi)
   const originalPriceNumber = Number(price) || 0;
   const discountPercent = Number(discount) || 0;
   const hasDiscount = discountPercent > 0;
@@ -62,32 +71,29 @@ export default function ProductCard({
   const finalPrice = hasDiscount
     ? originalPriceNumber * (1 - discountPercent / 100)
     : originalPriceNumber;
-  // 🔥 TO'G'RILANDI: Ichma-ich funksiya ochilishi tozalab tashlandi!
+
   const handleAddToCart = (e) => {
     e.stopPropagation();
 
-    // Tugma bosilganda animatsiya ishlashi uchun
+    // Tugma bosilgandagi animatsiya
     gsap.fromTo(
       e.currentTarget,
       { scale: 0.8 },
       { scale: 1, ease: "back.out(2)", duration: 0.35 },
     );
 
-    // Xavfsiz qiymatlarni shakllantirib olamiz
     const safeStock = stock !== undefined ? Number(stock) : 10;
 
     const cartProduct = {
       id: id,
       name: name,
-      price: finalPrice,          // Chegirmali yakuniy narx
-      image: image,              // Front-end kutayotgan rasm (image)
-      image_url: image,          // Xavfsizlik uchun ikkalasini ham yuboramiz
-      stock: safeStock,          // Ombordagi real soni
-      discount: Number(discount) || 0
+      price: Number(finalPrice.toFixed(2)), // 🪙 Matematik xatolar oldini olish uchun raqam tipiga o'tkazildi
+      image: image,
+      image_url: image,
+      stock: safeStock,
+      discount: discountPercent
     };
 
-
-    // Store-ga qo'shish endi aniq ishlaydi!
     addToCart(cartProduct);
   };
 
@@ -97,7 +103,7 @@ export default function ProductCard({
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onClick={() => navigate(`/products/${id}`)}
-      className="product-card w-full flex flex-col gap-2 sm:gap-3 cursor-pointer"
+      className="product-card w-full flex flex-col gap-2 sm:gap-3 cursor-pointer select-none"
       style={{ transformStyle: "preserve-3d" }}
     >
       {/* Image container */}
@@ -113,6 +119,7 @@ export default function ProductCard({
             src={image}
             alt={name}
             className="w-full h-full object-cover scale-105"
+            loading="lazy" // 🚀 Sahifa tezligini oshirish uchun
           />
         ) : (
           <div ref={imgRef} className="w-full h-full bg-[#9e9e9e] scale-105" />

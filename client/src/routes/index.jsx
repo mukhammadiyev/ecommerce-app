@@ -19,6 +19,7 @@ import Products from "../pages/public/Products.jsx";
 import AdminRoute from "./AdminRoute.jsx";
 import ProtectedRoute from "./ProtectedRoute.jsx";
 import Blogs from '../pages/public/Blogs.jsx'
+import BlogDetails from '../pages/public/BlogDetails.jsx'
 
 const router = createBrowserRouter([
   {
@@ -34,6 +35,8 @@ const router = createBrowserRouter([
       { path: "login", element: <Login /> },
       { path: "register", element: <Register /> },
       { path: "blogs", element: <Blogs /> },
+      { path: "blogs/:id", element: <BlogDetails /> },
+
       {
         path: "account",
         element: <ProtectedRoute />,
