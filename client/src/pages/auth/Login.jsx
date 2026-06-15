@@ -73,7 +73,7 @@ export default function Login() {
       );
   }, []);
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -88,17 +88,20 @@ export default function Login() {
     };
 
     try {
-      // 🔥 XATOLIK TUZATILDI: Backend validatoriga aynan 'email' kalitida yuboramiz
+      // 🌟 Xizmat faylingiz (authService) obyekt ichida 'identifier' kutyapti!
+      // Shuning uchun form.email qiymatini 'identifier' kaliti bilan yuboramiz.
       const data = await login({ 
-        email: form.email, 
+        identifier: form.email, // 👈 kalit nomi 'identifier' bo'ldi
         password: form.password 
       });
       
-      // Ro'lga qarab yo'naltirish
-      if (data && data.user?.role === "admin") {
-        navigate("/admin");
+      // Muvaffaqiyatli kirgandan so'ng tokenni authService'ning o'zi localStorage'ga yozadi.
+      // Endi faqat ro'lga qarab sahifani yo'naltiramiz:
+      if (data && (data.user?.role === "admin" || data.role === "admin")) {
+        // Agar admin bo'lsa, to'g'ridan-to'g'ri bloglar boshqaruviga o'tkaziladi
+        window.location.href = "/admin/blogs";
       } else {
-        navigate("/account"); 
+        window.location.href = "/account"; 
       }
     } catch (err) {
       console.error(err);

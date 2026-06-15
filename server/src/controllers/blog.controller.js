@@ -4,7 +4,7 @@ const AppError = require('../utils/appError');
 
 // 1. Barcha nashr qilingan bloglarni galereyasi bilan olish
 exports.getAllBlogs = async (req, res) => {
-  const blogs = await Blog.findAll({ 
+  const blogs = await Blog.findAll({
     where: { is_published: true },
     include: [{ model: BlogImage, as: 'blog_images', attributes: ['id', 'image_url'] }] // 🆕 associations.js dagi aliasga o'zgartirildi
   });
@@ -22,9 +22,10 @@ exports.getBlogById = async (req, res) => {
   return ApiResponse.send(res, "Blog tafsilotlari", blog);
 };
 
-// 3. Yangi blog yaratish (Asosiy va galereya rasmlari bilan)
+// 3. Yangi blog yaratish (Muallif, Asosiy va galereya rasmlari bilan)
 exports.createBlog = async (req, res) => {
-  const { title, content } = req.body;
+  // 💡 req.body ichidan author_name ni ham ajratib olamiz
+  const { title, content, author_name, author_image: textAuthorImage } = req.body;
 
   // Asosiy rasm tekshiruvi
   if (!req.files || !req.files['image']) {
@@ -32,18 +33,28 @@ exports.createBlog = async (req, res) => {
   }
   const image_url = req.files['image'][0].path;
 
+  // 💡 Muallif rasmini aniqlash (fayl yuklangan bo'lsa yo'lini olamiz, aks holda matnli URL)
+  let author_image = textAuthorImage || "";
+  if (req.files && req.files['author_image_file']) {
+    author_image = req.files['author_image_file'][0].path;
+  }
+
   // Galereya rasmlarini yig'ish
   let galleryData = [];
   if (req.files['gallery']) {
     galleryData = req.files['gallery'].map(file => ({ image_url: file.path }));
   }
 
-  // Blog va uning rasmlarini birdiga bazaga saqlash
+  // Blog va uning rasmlarini birdaniga bazaga saqlash
   const newBlog = await Blog.create({
-    title, content, image_url,
-    blog_images: galleryData // 🆕 Model ichidagi massiv nomi ham aliasga mos bo'lishi kerak
+    title,
+    content,
+    image_url,
+    author_name,   // 🌟 Muallif ismi bazaga yoziladi
+    author_image,  // 🌟 Muallif rasmi bazaga yoziladi
+    blog_images: galleryData
   }, {
-    include: [{ model: BlogImage, as: 'blog_images' }] // 🆕 alias to'g'rilandi
+    include: [{ model: BlogImage, as: 'blog_images' }]
   });
 
   // To'liq javobni qayta o'qib olish
@@ -51,14 +62,15 @@ exports.createBlog = async (req, res) => {
     include: [{ model: BlogImage, as: 'blog_images', attributes: ['id', 'image_url'] }]
   });
 
-  return ApiResponse.send(res, "Yangi blog galereya bilan yaratildi 🚀", completeBlog, 201);
+  return ApiResponse.send(res, "Yangi blog galereya va muallif bilan yaratildi 🚀", completeBlog, 201);
 };
 
 // 4. Blogni tahrirlash (PUT)
 exports.updateBlog = async (req, res) => {
-  const { title, content, is_published } = req.body;
+  // 💡 req.body'dan tegishli maydonlarni olamiz
+  const { title, content, is_published, author_name, author_image: textAuthorImage } = req.body;
   const { id } = req.params;
-  
+
   const blog = await Blog.findByPk(id);
   if (!blog) {
     throw new AppError("Tahrirlash uchun blog topilmadi", 404);
@@ -69,10 +81,17 @@ exports.updateBlog = async (req, res) => {
     blog.image_url = req.files['image'][0].path;
   }
 
+  // 💡 Muallif rasmi yangilangan bo'lsa
+  if (req.files && req.files['author_image_file']) {
+    blog.author_image = req.files['author_image_file'][0].path;
+  } else if (textAuthorImage !== undefined) {
+    blog.author_image = textAuthorImage;
+  }
+
   // Yangi galereya rasmlari kelgan bo'lsa, eskilarni yangilash
   if (req.files && req.files['gallery']) {
     await BlogImage.destroy({ where: { blog_id: id } }); // eskilarni o'chirish
-    
+
     const newImages = req.files['gallery'].map(file => ({
       blog_id: id,
       image_url: file.path
@@ -80,14 +99,16 @@ exports.updateBlog = async (req, res) => {
     await BlogImage.bulkCreate(newImages); // yangilarini yozish
   }
 
+  // Oddiy maydonlarni yangilash
   blog.title = title || blog.title;
   blog.content = content || blog.content;
+  blog.author_name = author_name !== undefined ? author_name : blog.author_name; // 🌟 Yangilash
   if (is_published !== undefined) blog.is_published = is_published;
 
   await blog.save();
 
   const updatedBlog = await Blog.findByPk(id, {
-    include: [{ model: BlogImage, as: 'blog_images', attributes: ['id', 'image_url'] }] // 🆕 alias to'g'rilandi
+    include: [{ model: BlogImage, as: 'blog_images', attributes: ['id', 'image_url'] }]
   });
 
   return ApiResponse.send(res, "Blog muvaffaqiyatli yangilandi! 📝", updatedBlog);

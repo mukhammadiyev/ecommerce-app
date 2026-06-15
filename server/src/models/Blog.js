@@ -19,6 +19,16 @@ const Blog = sequelize.define('Blog', {
     type: DataTypes.STRING,
     allowNull: true 
   },
+  // 👤 Muallif ismi uchun ustun
+  author_name: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  // 🖼️ Muallif rasmi uchun ustun
+  author_image: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   // Muallifni User jadvali bilan bog'lash uchun tashqi kalit maydoni
   author_id: {
     type: DataTypes.INTEGER,

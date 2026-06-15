@@ -19,16 +19,35 @@ import {
 import { useEffect, useRef, useState } from "react";
 
 // ── API helpers ──────────────────────────────────────────────────────
+// ── API helpers ──────────────────────────────────────────────────────
 const API = "/api";
 
 async function apiFetch(path, opts = {}) {
+  const token = localStorage.getItem("token");
+
+  // 💡 Agar body FormData bo'lsa, Content-Type header'ini o'zi avtomatik sozlaydi,
+  // aks holda JSON header'ni qo'shamiz
+  const headers = {
+    ...opts.headers,
+  };
+
+  if (!(opts.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const res = await fetch(`${API}${path}`, {
-    headers: { "Content-Type": "application/json" },
     ...opts,
+    headers,
   });
+
   if (!res.ok) {
-    const msg = await res.text().catch(() => res.statusText);
-    throw new Error(msg || res.statusText);
+    // Backenddan kelgan xatolik matnini o'qish
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || res.statusText);
   }
   return res.json();
 }
@@ -321,20 +340,22 @@ function InputField({ className = "", ...props }) {
 
 // ── Blog Modal ────────────────────────────────────────────────────────
 function BlogModal({ blog, onSave, onClose }) {
-  const [form, setForm] = useState(
-    blog
-      ? {
-          ...EMPTY_BLOG,
-          ...blog,
-          author_name: blog.author_name || blog.author?.name || "",
-          author_image: blog.author_image || blog.author?.image || "",
-          is_published: blog.is_published ?? true,
-          images: Array.isArray(blog.images)
-            ? [...blog.images, "", "", ""].slice(0, 3)
-            : ["", "", ""],
-        }
-      : { ...EMPTY_BLOG },
-  );
+const [form, setForm] = useState(
+  blog
+    ? {
+        ...EMPTY_BLOG,
+        ...blog,
+        author_name: blog.author_name || blog.author?.name || "",
+        author_image: blog.author_image || blog.author?.image || "",
+        is_published: blog.is_published ?? true,
+        images: Array.isArray(blog.blog_images)
+          ? [...blog.blog_images.map(img => img.image_url), "", "", ""].slice(0, 3)
+          : Array.isArray(blog.images)
+          ? [...blog.images, "", "", ""].slice(0, 3)
+          : ["", "", ""],
+      }
+    : { ...EMPTY_BLOG },
+);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const overlayRef = useRef(null);
@@ -376,23 +397,61 @@ function BlogModal({ blog, onSave, onClose }) {
   const handleSave = async () => {
     if (!validate()) return;
     setSaving(true);
-    const payload = {
-      ...form,
-      images: form.images.filter(Boolean),
-    };
-    // Remove legacy author_id if present
-    delete payload.author_id;
+
+    // 💡 JSON o'rniga rasmlarni yuklay oladigan FormData obyektini ochamiz
+    const formData = new FormData();
+    formData.append("title", form.title);
+    formData.append("content", form.content);
+    formData.append("is_published", form.is_published);
+
+    // 👤 Muallif matnli ma'lumotini qo'shamiz
+    formData.append("author_name", form.author_name || "");
+
     try {
+      // 🌟 1. Asosiy rasm (Main image) tekshiruvi va qo'shish
+      if (form.image_url) {
+        if (form.image_url.startsWith("data:image")) {
+          const res = await fetch(form.image_url);
+          const blob = await res.blob();
+          formData.append("image", blob, "main_image.jpg");
+        } else {
+          formData.append("image_url", form.image_url);
+        }
+      }
+
+      // 🌟 2. Muallif rasmi (Author avatar) tekshiruvi va qo'shish
+      if (form.author_image) {
+        if (form.author_image.startsWith("data:image")) {
+          const res = await fetch(form.author_image);
+          const blob = await res.blob();
+          formData.append("author_image_file", blob, "author_avatar.jpg"); // multer qabul qilishi uchun alohida nom
+        } else {
+          formData.append("author_image", form.author_image);
+        }
+      }
+
+      // 🌟 3. Galereya rasmlarini (Gallery) massiv ko'rinishida qo'shish
+      if (Array.isArray(form.images)) {
+        for (let i = 0; i < form.images.length; i++) {
+          const imgStr = form.images[i];
+          if (imgStr && imgStr.startsWith("data:image")) {
+            const res = await fetch(imgStr);
+            const blob = await res.blob();
+            formData.append("gallery", blob, `gallery_${i}.jpg`);
+          }
+        }
+      }
+
       let saved;
       if (blog?.id) {
         saved = await apiFetch(`/blogs/${blog.id}`, {
           method: "PUT",
-          body: JSON.stringify(payload),
+          body: formData, // 💡 JSON.stringify qilinmaydi!
         });
       } else {
         saved = await apiFetch("/blogs", {
           method: "POST",
-          body: JSON.stringify(payload),
+          body: formData,
         });
       }
       onSave(saved);
@@ -491,11 +550,7 @@ function BlogModal({ blog, onSave, onClose }) {
               {/* Avatar dropzone */}
               <div className="flex flex-col items-center gap-1 shrink-0">
                 <AvatarDropzone
-                  value={
-                    form.author_image?.startsWith("data:")
-                      ? form.author_image
-                      : ""
-                  }
+                  value={form.author_image || ""} // 🌟 data: deb tekshirish olib tashlandi
                   onChange={(v) => set("author_image", v)}
                 />
                 <p className="text-[9px] text-white/20">photo</p>
@@ -526,10 +581,9 @@ function BlogModal({ blog, onSave, onClose }) {
             <button
               onClick={() => set("is_published", !form.is_published)}
               className={`w-full h-10 px-3 rounded-xl border text-sm font-medium flex items-center gap-2 transition-all
-                ${
-                  form.is_published
-                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
-                    : "bg-[#151929] border-white/8 text-white/40 hover:border-white/20"
+                ${form.is_published
+                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
+                  : "bg-[#151929] border-white/8 text-white/40 hover:border-white/20"
                 }`}
             >
               {form.is_published ? (
@@ -570,9 +624,7 @@ function BlogModal({ blog, onSave, onClose }) {
                 className="mb-2"
               />
               <ImageDropzone
-                value={
-                  form.image_url?.startsWith("data:") ? form.image_url : ""
-                }
+                value={form.image_url || ""} // 🌟 data: deb tekshirish olib tashlandi
                 onChange={(v) => set("image_url", v)}
               />
             </div>
@@ -931,8 +983,18 @@ export default function AdminBlogs() {
       { y: -12, opacity: 0 },
       { y: 0, opacity: 1, duration: 0.4, ease: "power2.out" },
     );
+
     apiFetch("/blogs")
-      .then((bl) => setBlogs(bl))
+      .then((res) => {
+        // 💡 Sening ApiResponse classi ma'lumotni .data ichida yuboradi
+        if (res && res.data && Array.isArray(res.data)) {
+          setBlogs(res.data);
+        } else if (Array.isArray(res)) {
+          setBlogs(res);
+        } else {
+          setBlogs([]); // Hech narsa topilmasa qulab tushmasligi uchun
+        }
+      })
       .catch((e) => setToast({ message: e.message, type: "error" }))
       .finally(() => setLoading(false));
   }, []);
@@ -952,7 +1014,10 @@ export default function AdminBlogs() {
     return matchSearch && matchStatus;
   });
 
-  const handleSave = (saved) => {
+  const handleSave = (response) => {
+    // Agar javob ApiResponse obyekt bo'lsa, uning ichidagi toza post ma'lumotini olamiz
+    const saved = response.data || response;
+
     setBlogs((bs) =>
       bs.find((b) => b.id === saved.id)
         ? bs.map((b) => (b.id === saved.id ? saved : b))

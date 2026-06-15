@@ -1,65 +1,59 @@
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
-import { useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import BlogCard from "../../components/blog/BlogCard.jsx";
+import api from "../../services/api.js"; // 🌟 O'zingizning sozlangan api faylingiz
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 
-const blogs = [
-  {
-    id: 1,
-    imageSrc: "",
-    authorAvatar: "",
-    authorName: "Oliver Bennett",
-    date: "18 Jan 2022",
-    title: "Lorem Ipsum Is a Dummy Text Used As The Heading Of a Blog",
-    excerpt:
-      "Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam.",
-    href: "#",
-    featured: true,
-  },
-  {
-    id: 2,
-    imageSrc: "",
-    authorAvatar: "",
-    authorName: "Oliver Bennett",
-    date: "18 Jan 2022",
-    title: "Lorem Ipsum Is a Dummy Text Used As The Heading Of a Blog",
-    href: "#",
-  },
-  {
-    id: 3,
-    imageSrc: "",
-    authorAvatar: "",
-    authorName: "Oliver Bennett",
-    date: "18 Jan 2022",
-    title: "Lorem Ipsum Is a Dummy Text Used As The Heading Of a Blog",
-    href: "#",
-  },
-  {
-    id: 4,
-    imageSrc: "",
-    authorAvatar: "",
-    authorName: "Oliver Bennett",
-    date: "18 Jan 2022",
-    title: "Lorem Ipsum Is a Dummy Text Used As The Heading Of a Blog",
-    href: "#",
-  },
-];
-
-const featured = blogs.find((b) => b.featured);
-const rest = blogs.filter((b) => !b.featured);
+// 🌐 Backend port manzili (Rasmlar yo'lini to'g'ri ko'rsatish uchun)
+const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || "http://localhost:5000";
 
 export default function Blogs() {
+  const [blogs, setBlogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const titleRef = useRef(null);
   const featuredImgRef = useRef(null);
   const featuredTextRef = useRef(null);
   const gridRef = useRef(null);
 
+  // 1. Backenddan bloglarni yuklab olish qismi
+  useEffect(() => {
+    const fetchBlogs = async () => {
+      try {
+        const response = await api.get("/blogs");
+        const blogsData = response.data?.data || response.data;
+        
+        if (Array.isArray(blogsData)) {
+          // Birinchi elementni avtomatik ravishda 'featured' (Asosiy) deb belgilaymiz
+          const formattedBlogs = blogsData.map((blog, index) => ({
+            ...blog,
+            featured: index === 0, // birinchi element asosiy bannerga chiqadi
+          }));
+          setBlogs(formattedBlogs);
+        }
+      } catch (error) {
+        console.error("Bloglarni frontendga yuklashda xato:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBlogs();
+  }, []);
+
+  // Ma'lumotlarni ajratib olish
+  const featured = blogs.find((b) => b.featured);
+  const rest = blogs.filter((b) => !b.featured);
+
+  // 2. GSAP Animatsiyalar qismi (Faqat yuklanish tugagandan keyin ishlaydi)
   useLayoutEffect(() => {
+    if (loading || blogs.length === 0) return; // Ma'lumot kelguncha kutadi
+
     const ctx = gsap.context(() => {
-      // ── 1. Page title — SplitText words fan up on load ─────────────────
+      // ── Page title animation ──
       if (titleRef.current) {
         const split = new SplitText(titleRef.current, { type: "words" });
         gsap.from(split.words, {
@@ -72,7 +66,7 @@ export default function Blogs() {
         });
       }
 
-      // ── 2. Featured image — clip + slide in from left ──────────────────
+      // ── Featured image animation ──
       if (featuredImgRef.current) {
         gsap.from(featuredImgRef.current, {
           x: -50,
@@ -83,7 +77,7 @@ export default function Blogs() {
         });
       }
 
-      // ── 3. Featured text children — stagger slide from right ───────────
+      // ── Featured text animation ──
       if (featuredTextRef.current) {
         gsap.from([...featuredTextRef.current.children], {
           x: 30,
@@ -95,7 +89,7 @@ export default function Blogs() {
         });
       }
 
-      // ── 4. Grid cards — scroll-triggered scale + fade stagger ──────────
+      // ── Grid cards scroll animation ──
       if (gridRef.current) {
         const cards = gridRef.current.querySelectorAll(":scope > *");
         if (cards.length) {
@@ -117,7 +111,21 @@ export default function Blogs() {
     });
 
     return () => ctx.revert();
-  }, []);
+  }, [loading, blogs]); // loading o'zgarganda animatsiya boshlanadi
+
+  // Rasmlar URL manzilini tekshiruvchi yordamchi funksiya
+  const getImgUrl = (url) => {
+    if (!url) return "";
+    return url.startsWith("http") ? url : `${BASE_URL}/${url.replace(/\\/g, '/')}`;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <p className="text-gray-500 font-oxygen">Bloglar yuklanmoqda...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -133,21 +141,19 @@ export default function Blogs() {
         {/* Featured post — horizontal */}
         {featured && (
           <a
-            href={featured.href}
+            href={`/blogs/${featured.id}`}
             className="group flex flex-col md:flex-row gap-6 md:gap-10 cursor-pointer"
           >
             {/* Image */}
             <div
               ref={featuredImgRef}
-              className="w-full md:w-[46%] shrink-0 h-52 sm:h-64 md:h-72 rounded-2xl overflow-hidden bg-[#9e9e9e]"
+              className="w-full md:w-[46%] shrink-0 h-52 sm:h-64 md:h-72 rounded-2xl overflow-hidden bg-gray-100"
             >
-              {featured.imageSrc && (
-                <img
-                  src={featured.imageSrc}
-                  alt={featured.title}
-                  className="w-full h-full object-cover"
-                />
-              )}
+              <img
+                src={getImgUrl(featured.image_url)}
+                alt={featured.title}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
             </div>
 
             {/* Text */}
@@ -158,26 +164,30 @@ export default function Blogs() {
               <h2 className="text-lg sm:text-xl font-semibold text-gray-900 leading-snug group-hover:underline">
                 {featured.title}
               </h2>
-              {featured.excerpt && (
-                <p className="text-sm text-gray-500 leading-relaxed line-clamp-5">
-                  {featured.excerpt}
-                </p>
-              )}
+              <p className="text-sm text-gray-500 leading-relaxed line-clamp-5">
+                {featured.content}
+              </p>
+              
+              {/* Author & Date */}
               <div className="flex items-center gap-2 mt-1">
-                <div className="w-8 h-8 rounded-full bg-[#9e9e9e] overflow-hidden shrink-0">
-                  {featured.authorAvatar && (
-                    <img
-                      src={featured.authorAvatar}
-                      alt={featured.authorName}
-                      className="w-full h-full object-cover"
-                    />
-                  )}
+                <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden shrink-0 border">
+                  <img
+                    src={getImgUrl(featured.author_image) || "https://via.placeholder.com/150"}
+                    alt={featured.author_name}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <span className="text-sm text-gray-700">
-                  {featured.authorName}
+                  {featured.author_name || "Noma'lum muallif"}
                 </span>
                 <span className="text-gray-400 text-sm">•</span>
-                <span className="text-sm text-gray-500">{featured.date}</span>
+                <span className="text-sm text-gray-500">
+                  {new Date(featured.createdAt || featured.created_at).toLocaleDateString("en-US", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric"
+                  })}
+                </span>
               </div>
             </div>
           </a>
@@ -191,12 +201,16 @@ export default function Blogs() {
           {rest.map((blog) => (
             <BlogCard
               key={blog.id}
-              imageSrc={blog.imageSrc}
-              authorAvatar={blog.authorAvatar}
-              authorName={blog.authorName}
-              date={blog.date}
+              imageSrc={getImgUrl(blog.image_url)}
+              authorAvatar={getImgUrl(blog.author_image) || "https://via.placeholder.com/150"}
+              authorName={blog.author_name || "Noma'lum muallif"}
+              date={new Date(blog.createdAt || blog.created_at).toLocaleDateString("en-US", {
+                day: "numeric",
+                month: "short",
+                year: "numeric"
+              })}
               title={blog.title}
-              href={blog.href}
+              href={`/blogs/${blog.id}`}
             />
           ))}
         </div>
