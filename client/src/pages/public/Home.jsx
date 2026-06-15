@@ -66,11 +66,11 @@ export default function Home({
   // ── refs ──────────────────────────────────────────────────────────────────
   const heroHeadingRef = useRef(null);
   const heroSubRef = useRef(null);
-  const collageRef = useRef(null);       
-  const rightImgRef = useRef(null);      
-  const leftImgsRef = useRef(null);      
+  const collageRef = useRef(null);
+  const rightImgRef = useRef(null);
+  const leftImgsRef = useRef(null);
   const statsSectionRef = useRef(null);
-  const statEls = useRef([]);            
+  const statEls = useRef([]);
   const blogCardsRef = useRef(null);
   const productCardsRef = useRef(null);
 
@@ -113,7 +113,12 @@ export default function Home({
   // ── helpers ───────────────────────────────────────────────────────────────
   const getImgUrl = (url) => {
     if (!url) return "";
-    return url.startsWith("http") ? url : `${BASE_URL}/${url.replace(/\\/g, '/')}`;
+    // Agar bazada allaqachon to'liq link (http...) bo'lsa o'zini qaytaradi
+    if (url.startsWith("http")) return url;
+
+    // Boshidagi ortiqcha slasheslarni to'g'rilab, toza yo'l ochamiz
+    const cleanUrl = url.replace(/\\/g, '/').replace(/^\/+/, '');
+    return `${BASE_URL}/${cleanUrl}`;
   };
 
   // ── animations ────────────────────────────────────────────────────────────
@@ -407,17 +412,27 @@ export default function Home({
           <p className="text-center text-gray-500 py-10">Mahsulotlar yuklanmoqda...</p>
         ) : (
           <div ref={productCardsRef} className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
-            {products.map((product) => (
-              <ProductCard
-                key={product.id}
-                id={product.id}
-                imageSrc={getImgUrl(product.image_url || product.imageSrc)} // backend maydoniga qarab
-                name={product.name}
-                price={product.price}
-                discount={product.discount}
-                href={`/products/${product.id}`}
-              />
-            ))}
+            {products.map((product) => {
+              // 💡 Diqqat: Backend maydoningiz nomini tekshiring! 
+              // Odatda yoki 'image_url', yoki 'image', yoki 'main_image' bo'ladi.
+              const rawImage = product.image_url || product.image || product.main_image || product.imageSrc;
+              const finalImageUrl = getImgUrl(rawImage);
+
+              return (
+                <ProductCard
+                  key={product.id}
+                  id={product.id}
+                  // 🌟 Har ehtimolga qarshi ikkala props nomida ham yuboramiz:
+                  imageSrc={finalImageUrl}  // Agar ProductCard 'imageSrc' kutayotgan bo'lsa
+                  image_url={finalImageUrl} // Agar ProductCard 'image_url' kutayotgan bo'lsa
+                  image={finalImageUrl}     // Agar ProductCard shunchaki 'image' kutayotgan bo'lsa
+                  name={product.name || product.title}
+                  price={product.price}
+                  discount={product.discount}
+                  href={`/products/${product.id}`}
+                />
+              );
+            })}
           </div>
         )}
       </section>

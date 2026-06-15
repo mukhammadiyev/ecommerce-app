@@ -4,22 +4,32 @@ import { useNavigate } from "react-router-dom";
 import ProductGrid from "../../components/product/ProductGrid";
 import useCartStore from "../../hooks/useCartStore.js"; 
 
+const BASE_URL = "http://localhost:5000";
+
 // ─────────────────────────────────────────────
 // CartItem — Komponenti
 // ─────────────────────────────────────────────
 function CartItem({ item, onRemove, onQuantityChange, index }) {
   const rowRef = useRef(null);
 
- const productInfo = item.product || {};
-const name = productInfo.name || "Mahsulot";
-const price = Number(productInfo.price || 0);
-const stock = productInfo.stock !== undefined ? Number(productInfo.stock) : 50;
-const quantity = Number(item.quantity || 1);
+  const productInfo = item.product || {};
+  const name = productInfo.name || item.name || "Mahsulot";
+  const price = Number(productInfo.price || item.price || 0);
+  const stock = productInfo.stock !== undefined ? Number(productInfo.stock) : 50;
+  const quantity = Number(item.quantity || 1);
 
-// 🔥 RASMNI TO'G'RI ENGLASH:
-// Zustand store'da biz allaqachon product.image'ga rasm url'ini tenglab qo'yganmiz.
-// Agar u bo'lmasa backend'dan to'g'ridan-to'g'ri keladigan images massivini tekshiramiz.
-const image = productInfo.image || productInfo.images?.[0]?.image_url || item.image;
+  // 🛠 RASM URL MANZILINI TO'G'RI ANIKLASH
+  const getFullUrl = (rawPath) => {
+    if (!rawPath) return null;
+    let url = Array.isArray(rawPath) ? rawPath[0] : rawPath;
+    if (typeof url === "object") url = url.url || url.image || url.image_url;
+    if (typeof url !== "string") return null;
+    if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) return url;
+    return `${BASE_URL}${url.startsWith("/") ? url : "/" + url}`;
+  };
+
+  const rawImage = productInfo.image || productInfo.image_url || item.image || item.image_url || productInfo.images?.[0];
+  const image = getFullUrl(rawImage);
 
   useEffect(() => {
     let ctx = gsap.context(() => {
@@ -33,6 +43,9 @@ const image = productInfo.image || productInfo.images?.[0]?.image_url || item.im
   }, [index]);
 
   const handleRemove = () => {
+    // Backend va Zustand uchun to'g'ri IDni aniqlaymiz (Zustand elementi id si yoki MongoDB _id)
+    const itemIdToDelete = item.id || item._id;
+    
     gsap.to(rowRef.current, {
       opacity: 0,
       x: -36,
@@ -41,7 +54,7 @@ const image = productInfo.image || productInfo.images?.[0]?.image_url || item.im
       paddingBottom: 0,
       duration: 0.32,
       ease: "power2.in",
-      onComplete: () => onRemove(item.id), // CartItem ID orqali backend'dan o'chadi
+      onComplete: () => onRemove(itemIdToDelete),
     });
   };
 
@@ -59,13 +72,14 @@ const image = productInfo.image || productInfo.images?.[0]?.image_url || item.im
       gsap.fromTo(qtyEl, { scale: 0.65, opacity: 0.3 }, { scale: 1, opacity: 1, duration: 0.22, ease: "back.out(2.5)" });
     }
 
-    onQuantityChange(item.id, newQty); // Backend'da miqdor yangilanadi
+    const itemIdToUpdate = item.id || item._id;
+    onQuantityChange(itemIdToUpdate, newQty);
   };
 
   const Thumbnail = () => (
-    <div className="shrink-0 w-14 h-14 bg-gray-100 rounded-xl overflow-hidden border border-gray-200">
+    <div className="shrink-0 w-14 h-14 bg-gray-100 rounded-xl overflow-hidden border border-gray-200 flex items-center justify-center">
       {image ? (
-        <img src={image} alt={name} className="w-full h-full object-cover" />
+        <img src={image} alt={name} className="w-full h-full object-contain p-1" onError={(e) => { e.target.style.display = 'none'; }} />
       ) : (
         <div className="w-full h-full flex items-center justify-center text-gray-300">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -122,9 +136,9 @@ const image = productInfo.image || productInfo.images?.[0]?.image_url || item.im
 // Cart sahifasi (Asosiy qism)
 // ─────────────────────────────────────────────
 export default function Cart() {
-  const items = useCartStore((state) => state.items);
+  const items = useCartStore((state) => state.items) || [];
   const loading = useCartStore((state) => state.loading);
-  const fetchCart = useCartStore((state) => state.fetchCart); // 🆕 Zustand'dan fetchCart olindi
+  const fetchCart = useCartStore((state) => state.fetchCart); 
   const removeFromCart = useCartStore((state) => state.removeFromCart);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
 
@@ -139,12 +153,12 @@ export default function Cart() {
   const btnRef = useRef(null);
   const emptyRef = useRef(null);
 
-  // 🆕 SAHIFA OCHILGANDA BACKEND'DAN SAVATNI TORTIB KELISH
   useEffect(() => {
-    fetchCart();
+    if (typeof fetchCart === "function") {
+      fetchCart();
+    }
   }, [fetchCart]);
 
-  // Sahifa birinchi marta ochilgandagi chiroyli animatsiyalar
   useEffect(() => {
     const ctx = gsap.context(() => {
       gsap.fromTo(
@@ -161,9 +175,8 @@ export default function Cart() {
       }
     });
     return () => ctx.revert();
-  }, [loading]); // Loading tugagandan keyin animatsiya elementlarini to'g'ri hisoblaydi
+  }, [loading]); 
 
-  // Jami summa o'zgarganda faqat 1 marta chiroyli effekt berish
   useEffect(() => {
     if (!totalRef.current || items.length === 0) return;
     
@@ -186,7 +199,7 @@ export default function Cart() {
   }, [items.length]);
 
   const subtotal = items.reduce((sum, i) => {
-    const itemPrice = Number(i.product?.price || 0);
+    const itemPrice = Number(i.product?.price || i.price || 0);
     const itemQty = Number(i.quantity || 0);
     return sum + (itemPrice * itemQty);
   }, 0);
@@ -226,7 +239,6 @@ export default function Cart() {
     });
   };
 
-  // 🆕 Ma'lumot yuklanayotgan paytda "Loader" ko'rsatish (UX yaxshilash uchun)
   if (loading && items.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -236,7 +248,7 @@ export default function Cart() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pt-20">
       <div className="w-full container mx-auto px-5 sm:px-8 2xl:px-27 py-5 2xl:py-10 mb-12 sm:mb-20 flex flex-col gap-12">
         
         {items.length === 0 ? (
@@ -273,7 +285,7 @@ export default function Cart() {
               <div className="px-4 sm:px-5">
                 {items.map((item, i) => (
                   <CartItem
-                    key={item.id}
+                    key={item.id || item._id || i}
                     item={item}
                     index={i}
                     onRemove={removeFromCart} 

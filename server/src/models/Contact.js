@@ -18,6 +18,10 @@ const Contact = sequelize.define('Contact', {
       isEmail: true,
     },
   },
+  phone: { // 🆕 Telefon raqami bazaga qo'shildi
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   subject: {
     type: DataTypes.STRING,
     allowNull: true,
@@ -30,7 +34,7 @@ const Contact = sequelize.define('Contact', {
 }, {
   tableName: 'contacts',
   timestamps: true,
-  underscored: true, // 🆕 Ustun nomlarini snake_case (created_at) qiladi
+  underscored: true, 
 });
 
 module.exports = Contact;

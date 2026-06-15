@@ -1,12 +1,12 @@
-const { Contact } = require('../models/associations'); // ⚙️ Markaziy fayldan import qilamiz
+const { Contact } = require('../models/associations'); 
 const ApiResponse = require('../utils/response');
 const AppError = require('../utils/appError');
 
 // 1. Foydalanuvchidan kelgan xabarni saqlash
 exports.createContactMessage = async (req, res) => {
-  const { name, email, subject, message } = req.body; // 🆕 'subject' ham qo'shildi
+  const { name, email, phone, subject, message } = req.body; // 🆕 'phone' qabul qilinadi
 
-  const newMessage = await Contact.create({ name, email, subject, message });
+  const newMessage = await Contact.create({ name, email, phone, subject, message });
   return ApiResponse.send(res, "Xabaringiz adminga yetkazildi", newMessage, 201);
 };
 
@@ -26,6 +26,5 @@ exports.deleteMessage = async (req, res) => {
   }
 
   await message.destroy();
-
   return ApiResponse.send(res, "Xabar muvaffaqiyatli o'chirildi! 🗑️", null);
 };

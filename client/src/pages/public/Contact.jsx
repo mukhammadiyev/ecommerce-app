@@ -1,14 +1,11 @@
 import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useEffect, useRef, useState } from "react";
-
-gsap.registerPlugin(ScrollTrigger);
 
 /* ── contact info items ── */
 const INFO = [
   {
     label: "Phone Number",
-    value: "0012334566",
+    value: "+998 (90) 123-45-67",
     icon: (
       <svg
         width="18"
@@ -45,7 +42,7 @@ const INFO = [
   },
   {
     label: "Location",
-    value: "Lorem Ipsum",
+    value: "Tashkent, Uzbekistan",
     icon: (
       <svg
         width="18"
@@ -64,7 +61,7 @@ const INFO = [
   },
 ];
 
-/* ── reusable input ── */
+/* ── reusable input field ── */
 function Field({
   label,
   placeholder,
@@ -119,7 +116,6 @@ export default function Contact() {
 
   /* ── refs ── */
   const pageRef = useRef(null);
-  const accentRef = useRef(null);
   const headerRef = useRef(null);
   const cardRef = useRef(null);
   const infoItemsRef = useRef([]);
@@ -130,29 +126,19 @@ export default function Contact() {
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
 
-      /* accent line draws in */
+      /* header fades down */
       tl.fromTo(
-        accentRef.current,
-        { scaleX: 0, transformOrigin: "left center" },
-        { scaleX: 1, duration: 0.5 },
+        headerRef.current,
+        { opacity: 0, y: -16 },
+        { opacity: 1, y: 0, duration: 0.5 },
       )
-
-        /* header fades down */
-        .fromTo(
-          headerRef.current,
-          { opacity: 0, y: -16 },
-          { opacity: 1, y: 0, duration: 0.45 },
-          "-=0.2",
-        )
-
         /* card slides up */
         .fromTo(
           cardRef.current,
           { opacity: 0, y: 36 },
-          { opacity: 1, y: 0, duration: 0.55 },
+          { opacity: 1, y: 0, duration: 0.6 },
           "-=0.25",
         )
-
         /* info items stagger left */
         .fromTo(
           infoItemsRef.current,
@@ -160,7 +146,6 @@ export default function Contact() {
           { opacity: 1, x: 0, duration: 0.4, stagger: 0.1 },
           "-=0.3",
         )
-
         /* form column fades in from right */
         .fromTo(
           formColRef.current,
@@ -178,16 +163,17 @@ export default function Contact() {
     const e = {};
     if (!form.name.trim()) e.name = "Name is required.";
     if (!/\S+@\S+\.\S+/.test(form.email)) e.email = "Enter a valid email.";
-    if (!form.message.trim()) e.message = "Message cannot be empty.";
+    if (!form.message.trim() || form.message.trim().length < 5) e.message = "Message must be at least 5 characters.";
     return e;
   };
 
   const handleSubmit = async (ev) => {
     ev.preventDefault();
     const errs = validate();
+    
     if (Object.keys(errs).length) {
       setErrors(errs);
-      /* shake the form column */
+      /* shake the form column if error exists */
       gsap.fromTo(
         formColRef.current,
         { x: -6 },
@@ -195,28 +181,70 @@ export default function Contact() {
       );
       return;
     }
+    
     setErrors({});
     setLoading(true);
 
-    /* simulate send — replace with real API call */
-    await new Promise((r) => setTimeout(r, 900));
-    setLoading(false);
-    setSent(true);
+    try {
+      // 🆕 BACKEND API BILAN BOG'LASH PARTI
+      // Serveringiz porti (masalan 5000 yoki boshqa) qaysi bo'lsa, url manzilini to'g'rilang
+      const response = await fetch("http://localhost:5000/api/contacts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          phone: form.phone || null, // ixtiyoriy maydon
+          subject: form.subject || "Mavzu ko'rsatilmagan", // ixtiyoriy maydon
+          message: form.message,
+        }),
+      });
 
-    /* success: scale-bounce the form column */
-    gsap.fromTo(
-      formColRef.current,
-      { scale: 0.97 },
-      { scale: 1, duration: 0.5, ease: "back.out(2)" },
-    );
+      const resData = await response.json();
+
+      if (response.ok) {
+        setLoading(false);
+        setSent(true);
+
+        /* success animation */
+        gsap.fromTo(
+          formColRef.current,
+          { scale: 0.97 },
+          { scale: 1, duration: 0.5, ease: "back.out(2)" },
+        );
+      } else {
+        // Agar backend validation xato (Joi) qaytarsa yoki serverda xato bo'lsa
+        setErrors({ server: resData.message || "Xabar yuborishda xatolik yuz berdi." });
+        setLoading(false);
+      }
+    } catch (error) {
+      // Agar server butunlay o'chib qolgan bo'lsa yoki aloqa bo'lmasa
+      setErrors({ server: "Server bilan aloqa o'rnatib bo'lmadi. Tarmoqni tekshiring." });
+      setLoading(false);
+    }
   };
 
-  const f = (key) => (e) => setForm((p) => ({ ...p, [key]: e.target.value }));
+  const handleInputChange = (key) => (e) => 
+    setForm((p) => ({ ...p, [key]: e.target.value }));
+
+  const resetForm = () => {
+    setSent(false);
+    setForm({
+      name: "",
+      email: "",
+      phone: "",
+      subject: "",
+      message: "",
+    });
+  };
 
   return (
     <div ref={pageRef} className="bg-white min-h-screen font-oxygen">
-      <div className="w-full container mx-auto px-5 sm:px-8 2xl:px-27 pt-14 sm:pb-20  pb-14 sm:pt-20 lg:pb-25">
-        {/* ── page accent + section header ── */}
+      <div className="w-full container mx-auto px-5 sm:px-8 2xl:px-27 pt-14 pb-14 sm:pt-20 sm:pb-20 lg:pb-25">
+        
+        {/* ── section header ── */}
         <div className="flex flex-col items-center mb-10 sm:mb-14">
           <h1
             ref={headerRef}
@@ -231,7 +259,7 @@ export default function Contact() {
           ref={cardRef}
           className="rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
         >
-          {/* ── grey top bar ── */}
+          {/* ── top bar ── */}
           <div className="bg-[#8a8a8a] px-6 sm:px-10 lg:px-12 py-5">
             <h2 className="text-white text-sm sm:text-base font-semibold tracking-wide">
               Get In Touch With Us
@@ -240,12 +268,9 @@ export default function Contact() {
 
           {/* ── two-column body ── */}
           <div className="flex flex-col lg:flex-row">
-            {/* LEFT — contact info ── */}
-            <div
-              className="lg:w-[38%] xl:w-[36%] px-6 sm:px-10 lg:px-12 py-8 sm:py-10
-              border-b border-gray-100 lg:border-b-0 lg:border-r lg:border-gray-100
-              flex flex-col justify-between gap-8"
-            >
+            
+            {/* LEFT — contact info */}
+            <div className="lg:w-[38%] xl:w-[36%] px-6 sm:px-10 lg:px-12 py-8 sm:py-10 border-b border-gray-100 lg:border-b-0 lg:border-r flex flex-col justify-between gap-8">
               <div className="flex flex-col gap-0">
                 {INFO.map((item, i) => (
                   <div key={i} ref={(el) => (infoItemsRef.current[i] = el)}>
@@ -269,7 +294,7 @@ export default function Contact() {
                 ))}
               </div>
 
-              {/* social row — mobile/tablet only context helper */}
+              {/* social networks */}
               <div className="hidden sm:flex lg:hidden items-center gap-3 pt-2">
                 {["Twitter", "Instagram", "LinkedIn"].map((s) => (
                   <a
@@ -283,7 +308,7 @@ export default function Contact() {
               </div>
             </div>
 
-            {/* RIGHT — message form ── */}
+            {/* RIGHT — message form */}
             <div
               ref={formColRef}
               className="flex-1 px-6 sm:px-10 lg:px-12 py-8 sm:py-10"
@@ -295,6 +320,16 @@ export default function Contact() {
                 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla
                 fringilla nunc in molestie feugiat.
               </p>
+
+              {/* 🆕 Server xatoliklarini ekranda ko'rsatish oynasi */}
+              {errors.server && (
+                <div className="mb-5 bg-red-50 border border-red-200 text-red-600 text-xs sm:text-sm rounded-xl p-4 flex items-center gap-2">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                  <span>{errors.server}</span>
+                </div>
+              )}
 
               {sent ? (
                 /* success state */
@@ -320,66 +355,55 @@ export default function Contact() {
                     We'll get back to you within 24 hours.
                   </p>
                   <button
-                    onClick={() => {
-                      setSent(false);
-                      setForm({
-                        name: "",
-                        email: "",
-                        phone: "",
-                        subject: "",
-                        message: "",
-                      });
-                    }}
+                    onClick={resetForm}
                     className="mt-2 text-xs text-[#1a1a2e] underline underline-offset-2 hover:opacity-70 transition-opacity"
                   >
                     Send another message
                   </button>
                 </div>
               ) : (
+                /* active form */
                 <form onSubmit={handleSubmit} noValidate>
                   <div className="flex flex-col gap-4">
-                    {/* name + email */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <Field
                         placeholder="Your Name"
                         value={form.name}
-                        onChange={f("name")}
+                        onChange={handleInputChange("name")}
                         error={errors.name}
                       />
                       <Field
                         placeholder="Your E-mail"
                         type="email"
                         value={form.email}
-                        onChange={f("email")}
+                        onChange={handleInputChange("email")}
                         error={errors.email}
                       />
                     </div>
 
-                    {/* phone + subject */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <Field
                         placeholder="Phone Number"
                         type="tel"
                         value={form.phone}
-                        onChange={f("phone")}
+                        onChange={handleInputChange("phone")}
+                        error={errors.phone}
                       />
                       <Field
                         placeholder="Subject"
                         value={form.subject}
-                        onChange={f("subject")}
+                        onChange={handleInputChange("subject")}
                       />
                     </div>
 
-                    {/* message */}
                     <Field
                       placeholder="Message"
                       value={form.message}
-                      onChange={f("message")}
+                      onChange={handleInputChange("message")}
                       textarea
                       error={errors.message}
                     />
 
-                    {/* submit */}
                     <div className="flex items-center justify-start mt-1">
                       <button
                         type="submit"
