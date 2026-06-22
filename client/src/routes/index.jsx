@@ -3,13 +3,14 @@ import PublicLayout from "../layouts/PublicLayout.jsx";
 import AccountInformation from "../pages/account/AccountInformation.jsx";
 import PaymentBilling from "../pages/account/PaymentBilling.jsx";
 import Settings from "../pages/account/Settings.jsx";
+import OrderHistory from "../pages/account/OrderHistory.jsx"; // 🔥 Yangi qo'shildi
 import AdminProducts from "../pages/admin/AdminProducts.jsx";
 import Dashboard from "../pages/admin/Dashboard.jsx";
 import AdminBlogs from "../pages/admin/AdminBlogs.jsx";
 import Inbox from "../pages/admin/Inbox.jsx";
 import AdminCoupons from "../pages/admin/Coupons.jsx"; 
 import AdminOrders from "../pages/admin/Orders.jsx"; 
-import AdminNewsletter from "../pages/admin/Newsletter.jsx"; // 🔥 Newsletter importi
+import AdminNewsletter from "../pages/admin/Newsletter.jsx"; 
 import Login from "../pages/auth/Login.jsx";
 import Register from "../pages/auth/Register.jsx";
 import Cart from "../pages/public/Cart.jsx";
@@ -47,6 +48,10 @@ const router = createBrowserRouter([
           {
             index: true,
             element: <AccountInformation />,
+          },
+          {
+            path: "orders", // 🔥 Navbar-dagi link bilan mos tushadi (/account/orders)
+            element: <OrderHistory />,
           },
           {
             path: "billing",
@@ -89,7 +94,6 @@ const router = createBrowserRouter([
         path: "orders",
         element: <AdminOrders />,
       },
-      // 🔥 NEWLETTER YO'NALISHI SHU YERDA:
       {
         path: "newsletter",
         element: <AdminNewsletter />,

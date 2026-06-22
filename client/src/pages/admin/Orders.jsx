@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import adminOrderService from '../../services/orderService'; // Biz boya yaratgan servis
+import adminOrderService from '../../services/orderService'; 
 
 export default function AdminOrders() {
     const [orders, setOrders] = useState([]);
@@ -62,22 +62,24 @@ export default function AdminOrders() {
                 setOrders(orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
             }
         } catch (err) {
+            console.error(err);
         }
     };
 
-    // Status ranglarini aniqlash (Rasmga moslab)
+    // Status ranglarini aniqlash
     const getStatusBadgeClass = (status) => {
         switch (status) {
-            case 'delivered': return 'bg-[#00B69B]/20 text-[#00B69B]'; // Completed
-            case 'processing': return 'bg-[#6226EF]/20 text-[#6226EF]'; // Processing
-            case 'pending': return 'bg-[#FFA755]/20 text-[#FFA755]'; // On Hold
-            case 'cancelled': return 'bg-[#EF3826]/20 text-[#EF3826]'; // Rejected
+            case 'delivered': return 'bg-[#00B69B]/20 text-[#00B69B]'; 
+            case 'processing': return 'bg-[#6226EF]/20 text-[#6226EF]'; 
+            case 'pending': return 'bg-[#FFA755]/20 text-[#FFA755]'; 
+            case 'shipped': return 'bg-[#A155FF]/20 text-[#A155FF]';
+            case 'cancelled': return 'bg-[#EF3826]/20 text-[#EF3826]'; 
             default: return 'bg-gray-700 text-gray-300';
         }
     };
 
-    if (loading) return <div className="text-center pt-20 text-white">Yuklanmoqda...</div>;
-    if (error) return <div className="text-center pt-20 text-red-500">{error}</div>;
+    if (loading) return <div className="text-center pt-20 text-white font-sans">Yuklanmoqda...</div>;
+    if (error) return <div className="text-center pt-20 text-red-500 font-sans">{error}</div>;
 
     return (
         <div className="min-h-screen bg-[#1F2128] text-white p-8 font-sans">
@@ -92,7 +94,6 @@ export default function AdminOrders() {
                         <span>Filter By</span>
                     </div>
 
-                    {/* Sana bo'yicha filtr */}
                     <input
                         type="date"
                         value={dateFilter}
@@ -100,7 +101,6 @@ export default function AdminOrders() {
                         className="bg-[#1F2128] border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-blue-500"
                     />
 
-                    {/* Status bo'yicha filtr */}
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
@@ -114,7 +114,6 @@ export default function AdminOrders() {
                         <option value="cancelled">Cancelled (Rejected)</option>
                     </select>
 
-                    {/* Filtrni tiklash */}
                     {(statusFilter || dateFilter) && (
                         <button
                             onClick={() => { setStatusFilter(''); setDateFilter(''); }}
@@ -133,6 +132,7 @@ export default function AdminOrders() {
                                 <th className="py-4 px-6">ID</th>
                                 <th className="py-4 px-6">User Name</th>
                                 <th className="py-4 px-6">Address</th>
+                                <th className="py-4 px-6">Products &amp; Qty</th> {/* 🔥 MAHSULOTLAR NOMI VA SONI */}
                                 <th className="py-4 px-6">Date</th>
                                 <th className="py-4 px-6">Total Price</th>
                                 <th className="py-4 px-6 text-center">Status</th>
@@ -141,44 +141,66 @@ export default function AdminOrders() {
                         <tbody className="divide-y divide-gray-800 text-sm text-gray-300">
                             {filteredOrders.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" className="text-center py-8 text-gray-500">Hech qanday buyurtma topilmadi.</td>
+                                    <td colSpan="7" className="text-center py-8 text-gray-500">Hech qanday buyurtma topilmadi.</td>
                                 </tr>
                             ) : (
-                                filteredOrders.map((order) => (
-                                    <tr key={order.id} className="hover:bg-[#2a2e3a] transition-colors">
-                                        <td className="py-4 px-6 font-semibold">#{String(order.id).padStart(5, '0')}</td>
-                                        <td className="p-4 px-6 font-semibold text-white/90">
-                                            {order.user?.name || "Noma'lum Xaridor"}
-                                        </td>
-                                        <td className="py-4 px-6 max-w-xs truncate text-gray-400">
-                                            {order.shipping_address}
-                                        </td>
-                                        <td className="py-4 px-6 text-gray-400">
-                                            {new Date(order.createdAt).toLocaleDateString('en-GB', {
-                                                day: '2-digit', month: 'short', year: 'numeric'
-                                            })}
-                                        </td>
-                                        <td className="py-4 px-6 font-semibold text-gray-200">
-                                            ${Number(order.total_price).toFixed(2)}
-                                        </td>
-                                        <td className="py-4 px-6 text-center">
-                                            <button
-                                                onClick={() => handleStatusChange(order.id, order.status)}
-                                                className={`px-4 py-1.5 rounded-lg text-xs font-bold capitalize tracking-wide transition-transform active:scale-95 cursor-pointer ${getStatusBadgeClass(order.status)}`}
-                                                title="Statusni o'zgartirish uchun bosing"
-                                            >
-                                                {order.status === 'delivered' ? 'Completed' :
-                                                    order.status === 'cancelled' ? 'Rejected' :
-                                                        order.status === 'pending' ? 'On Hold' : order.status}
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
+                                filteredOrders.map((order) => {
+                                    return (
+                                        <tr key={order.id} className="hover:bg-[#2a2e3a] transition-colors align-middle">
+                                            <td className="py-4 px-6 font-semibold">#{String(order.id).padStart(5, '0')}</td>
+                                            <td className="p-4 px-6 font-semibold text-white/90">
+                                                {order.user?.name || "Noma'lum Xaridor"}
+                                            </td>
+                                            <td className="py-4 px-6 max-w-xs truncate text-gray-400" title={order.shipping_address}>
+                                                {order.shipping_address}
+                                            </td>
+                                            
+                                            {/* 🔥 MAHSULOT ISMLARI VA DONALARI SHU YERDA RO'YXAT BO'LIB CHIQADI */}
+                                            <td className="py-4 px-6">
+                                                <div className="space-y-1 max-w-xs">
+                                                    {order.order_items && order.order_items.length > 0 ? (
+                                                        order.order_items.map((item, idx) => (
+                                                            <div key={item.id || idx} className="text-xs text-gray-300 flex items-center justify-between gap-2 border-b border-gray-800/40 pb-0.5 last:border-none">
+                                                                <span className="truncate text-white/80 font-medium" title={item.product?.name}>
+                                                                    • {item.product?.name || "O'chirilgan mahsulot"}
+                                                                </span>
+                                                                <span className="text-blue-400 font-bold shrink-0 bg-blue-500/10 px-1.5 py-0.5 rounded">
+                                                                    x{item.quantity}
+                                                                </span>
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-gray-500 text-xs">Mahsulot yo'q</span>
+                                                    )}
+                                                </div>
+                                            </td>
+
+                                            <td className="py-4 px-6 text-gray-400">
+                                                {new Date(order.createdAt).toLocaleDateString('en-GB', {
+                                                    day: '2-digit', month: 'short', year: 'numeric'
+                                                })}
+                                            </td>
+                                            <td className="py-4 px-6 font-semibold text-gray-200">
+                                                {Number(order.total_price).toLocaleString()} so'm
+                                            </td>
+                                            <td className="py-4 px-6 text-center">
+                                                <button
+                                                    onClick={() => handleStatusChange(order.id, order.status)}
+                                                    className={`px-4 py-1.5 rounded-lg text-xs font-bold capitalize tracking-wide transition-transform active:scale-95 cursor-pointer ${getStatusBadgeClass(order.status)}`}
+                                                    title="Statusni o'zgartirish uchun bosing"
+                                                >
+                                                    {order.status === 'delivered' ? 'Completed' :
+                                                     order.status === 'cancelled' ? 'Rejected' :
+                                                     order.status === 'pending' ? 'On Hold' : order.status}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             )}
                         </tbody>
                     </table>
 
-                    {/* Jadval osti ma'lumotlari */}
                     <div className="bg-[#292D37] px-6 py-4 flex justify-between items-center text-xs text-gray-400 border-t border-gray-800">
                         <span>Showing 1-{filteredOrders.length} of {orders.length}</span>
                     </div>
