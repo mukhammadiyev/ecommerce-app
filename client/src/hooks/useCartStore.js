@@ -7,6 +7,7 @@ const useCartStore = create((set, get) => ({
   loading: false,
   error: null,
 
+  // 1. Savatni yuklash
   fetchCart: async () => {
     if (get().loading) return;
     set({ loading: true, error: null });
@@ -20,9 +21,8 @@ const useCartStore = create((set, get) => ({
       const data = await response.json();
 
       if (response.ok) {
-        // Backend: data.data?.cart_items yoki data?.cart_items
-        const cartItems = data.data?.cart_items || data?.cart_items || [];
-        set({ items: cartItems, loading: false });
+        const cartItems = data.data?.cart_items || data?.cart_items || data.data || [];
+        set({ items: Array.isArray(cartItems) ? cartItems : [], loading: false });
       } else {
         set({ items: [], loading: false, error: data.message });
       }
@@ -32,10 +32,9 @@ const useCartStore = create((set, get) => ({
     }
   },
 
+  // 2. Savatga mahsulot qo'shish (Cheksiz miqdorda)
   addToCart: async (product, qty = 1) => {
     const currentItems = get().items;
-    
-    // Backend Integer kutayotgan bo'lsa, raqamga o'giramiz, aks holda String
     const rawId = product.id || product._id || product.product_id;
     const targetProductId = Number(rawId) ? Number(rawId) : String(rawId);
     
@@ -48,18 +47,8 @@ const useCartStore = create((set, get) => ({
       const currentQty = Number(existingItem.quantity || 0);
       const newQty = currentQty + Number(qty);
       
-      if (newQty > 50) {
-        alert(`Bitta mahsulotdan jami 50 tadan ko'p buyurtma berish taqiqlangan! Savatda hozir: ${currentQty} ta bor.`);
-        return;
-      }
-
       const cartItemId = existingItem.id || existingItem._id;
       await get().updateQuantity(cartItemId, newQty);
-      return;
-    }
-
-    if (Number(qty) > 50) {
-      alert(`Maksimal limit 50 ta!`);
       return;
     }
 
@@ -73,8 +62,8 @@ const useCartStore = create((set, get) => ({
           "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
-          product_id: targetProductId, // Raqam yoki String formatda
-          quantity: Number(qty)         // Aniq integer shaklida
+          product_id: targetProductId,
+          quantity: Number(qty)
         })
       });
 
@@ -85,7 +74,6 @@ const useCartStore = create((set, get) => ({
         await get().fetchCart(); 
       } else {
         set({ loading: false, error: data.message });
-        alert(data.message || "Xatolik yuz berdi");
       }
     } catch (error) {
       console.error("Savatga qo'shishda xatolik:", error);
@@ -93,14 +81,10 @@ const useCartStore = create((set, get) => ({
     }
   },
 
+  // 3. Savatdagi mahsulot miqdorini o'zgartirish (Cheksiz miqdorda)
   updateQuantity: async (cartItemId, quantity) => {
     if (quantity <= 0) return;
-
-    if (quantity > 50) {
-      alert(`Bitta mahsulot uchun ruxsat etilgan maksimal miqdor 50 ta!`);
-      return;
-    }
-
+    
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(`${API_URL}/cart/items/${cartItemId}`, {
@@ -129,6 +113,7 @@ const useCartStore = create((set, get) => ({
     }
   },
 
+  // 4. Savatdan mahsulotni o'chirish
   removeFromCart: async (cartItemId) => {
     try {
       const token = localStorage.getItem("token");
@@ -147,9 +132,55 @@ const useCartStore = create((set, get) => ({
     }
   },
 
+  // 5. Savatdagi jami mahsulotlar sonini hisoblash
   getTotalItems: () => {
     return get().items.reduce((sum, i) => sum + Number(i.quantity || 0), 0);
   },
+
+  // 6. Buyurtma berish (Checkout) — 🔥 KUPON KODI BILAN BIRGA YANGILANDI
+  checkoutCart: async (orderData) => {
+    set({ loading: true, error: null });
+    try {
+      const token = localStorage.getItem("token");
+      
+      const response = await fetch(`${API_URL}/orders/checkout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          shipping_address: orderData.shipping_address,
+          phone_number: orderData.phone_number,
+          coupon_code: orderData.coupon_code // 🚀 Kupon kodi endi backend-ga yuboriladi!
+        })
+      });
+
+      if (!response.ok) {
+        const textError = await response.text();
+        let parsedMessage = `Server xatosi: ${response.status}`;
+        try {
+          const jsonErr = JSON.parse(textError);
+          parsedMessage = jsonErr.message || parsedMessage;
+        } catch (e) {
+          // JSON formatda bo'lmagan xatoliklar uchun
+        }
+        set({ loading: false, error: parsedMessage });
+        return { success: false, message: parsedMessage };
+      }
+
+      const data = await response.json();
+      
+      // Muvaffaqiyatli buyurtmadan keyin savatni tozalaymiz
+      set({ items: [], loading: false });
+      return { success: true, data };
+
+    } catch (error) {
+      console.error("Checkout xatoligi:", error);
+      set({ loading: false, error: error.message });
+      return { success: false, message: error.message };
+    }
+  }
 }));
 
 export default useCartStore;

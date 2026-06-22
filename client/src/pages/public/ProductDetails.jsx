@@ -320,7 +320,7 @@ export default function ProductDetails() {
     if (existingItem) {
       const cartItemId = existingItem.id || existingItem._id;
       await updateQuantity(cartItemId, qty);
-      alert(`Savatdagi mahsulot miqdori ${qty} taga yangilandi!`);
+      (`Savatdagi mahsulot miqdori ${qty} taga yangilandi!`);
     } else {
       const cartProduct = {
         id: currentId,
@@ -332,7 +332,7 @@ export default function ProductDetails() {
         discount: discountPercent, // To'g'ri foiz yuborilyapti
       };
       await addToCart(cartProduct, qty);
-      alert(`${qty} ta mahsulot savatga qo'shildi!`);
+      (`${qty} ta mahsulot savatga qo'shildi!`);
     }
   };
 

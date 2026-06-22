@@ -10,9 +10,9 @@ const startServer = async () => {
     // 1. Bazaga ulanish
     await connectDB();
 
-    // 2. Modellar sinxronizatsiyasi (alter: true qilindi, endi o'chib ketmaydi!)
-    await sequelize.sync({ alter: true }); 
-    console.log('🔄 Jadvallar yangilandi, maʼlumotlar xavfsiz saqlandi!');
+    // 2. Modellar sinxronizatsiyasi
+    await sequelize.sync(); 
+    console.log('🔄 Jadvallar tekshirildi, tizim tayyor!');
 
     // 3. Serverni portga qo'yish
     app.listen(PORT, () => {

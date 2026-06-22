@@ -12,4 +12,8 @@ router.post('/process', paymentController.processPayment);
 router.get('/admin/all', adminMiddleware, paymentController.getAllPaymentsForAdmin); 
 router.put('/admin/:id/status', adminMiddleware, paymentController.updatePaymentStatus); 
 
+router.get('/cards', authMiddleware, paymentController.getUserCards);
+router.post('/cards', authMiddleware, paymentController.addUserCard);
+router.put('/cards/:id/default', paymentController.setDefaultCard);
+router.delete('/cards/:id', paymentController.deleteUserCard);
 module.exports = router;
