@@ -1,16 +1,16 @@
-const { User, Address } = require('../models/associations'); // ⚙️ Markaziy fayldan import qilamiz
+const { User, Address, sequelize } = require('../models/associations'); 
 const bcrypt = require('bcryptjs');
 const ApiResponse = require('../utils/response');
 const AppError = require('../utils/appError');
 
-// 1. Profil ma'lumotlarini olish (Bog'langan manzil bilan birga)
+// 1. Profil ma'lumotlarini olish
 exports.getProfile = async (req, res) => {
   const userId = req.user.id;
   
   const user = await User.findByPk(userId, {
     attributes: { exclude: ['password'] },
     include: [
-      { model: Address, as: 'address' } // 🆕 Foydalanuvchining alohida manzillar jadvalidagi ma'lumotlarini ham qo'shib qaytaramiz
+      { model: Address, as: 'address' } 
     ]
   });
 
@@ -24,44 +24,53 @@ exports.getProfile = async (req, res) => {
 // 2. Profil ma'lumotlarini tahrirlash
 exports.updateProfile = async (req, res) => {
   const userId = req.user.id;
-  const { first_name, last_name, phone_number, shipping_address } = req.body;
+  const { name, last_name, phone_number, shipping_address } = req.body;
 
-  const user = await User.findByPk(userId);
-  if (!user) {
-    throw new AppError("Foydalanuvchi topilmadi.", 404);
-  }
+  const t = await sequelize.transaction();
 
-  user.first_name = first_name !== undefined ? first_name : user.first_name;
-  user.last_name = last_name !== undefined ? last_name : user.last_name;
-  user.phone_number = phone_number !== undefined ? phone_number : user.phone_number;
-
-  // 🆕 Agar alohida Address modeli ishlatilayotgan bo'lsa va req.body'dan yangi manzil kelsa:
-  if (shipping_address !== undefined) {
-    // Avval shu foydalanuvchining manzili bormi tekshiramiz
-    let addressRecord = await Address.findOne({ where: { user_id: userId } });
-    if (addressRecord) {
-      addressRecord.address_line = shipping_address; // Modelizdagi ustun nomiga qarab moslaysiz (masalan: address_line)
-      await addressRecord.save();
-    } else {
-      await Address.create({ user_id: userId, address_line: shipping_address });
+  try {
+    const user = await User.findByPk(userId, { transaction: t });
+    if (!user) {
+      throw new AppError("Foydalanuvchi topilmadi.", 404);
     }
+
+    user.name = name !== undefined ? name : user.name;
+    user.last_name = last_name !== undefined ? last_name : user.last_name; 
+    user.phone_number = phone_number !== undefined ? phone_number : user.phone_number;
+
+    if (shipping_address !== undefined) {
+      let addressRecord = await Address.findOne({ where: { user_id: userId }, transaction: t });
+      if (addressRecord) {
+        addressRecord.address_line = shipping_address; 
+        await addressRecord.save({ transaction: t });
+      } else {
+        await Address.create({ user_id: userId, address_line: shipping_address }, { transaction: t });
+      }
+    }
+
+    await user.save({ transaction: t });
+    await t.commit();
+
+    const updatedUser = await User.findByPk(userId, {
+      attributes: { exclude: ['password'] },
+      include: [{ model: Address, as: 'address' }]
+    });
+
+    return ApiResponse.send(res, "Profil ma'lumotlari muvaffaqiyatli yangilandi! 📝", updatedUser);
+  } catch (error) {
+    await t.rollback();
+    throw error;
   }
-
-  await user.save();
-
-  // Yangilangan to'liq ma'lumotni manzil bilan qayta o'qib olamiz
-  const updatedUser = await User.findByPk(userId, {
-    attributes: { exclude: ['password'] },
-    include: [{ model: Address, as: 'address' }]
-  });
-
-  return ApiResponse.send(res, "Profil ma'lumotlari muvaffaqiyatli yangilandi! 📝", updatedUser);
 };
 
 // 3. Parolni yangilash
 exports.updatePassword = async (req, res) => {
   const userId = req.user.id;
   const { old_password, new_password } = req.body;
+
+  if (old_password === new_password) {
+    throw new AppError("Yangi parol eski paroldan farqli bo'lishi kerak!", 400);
+  }
 
   const user = await User.findByPk(userId);
   if (!user) {
@@ -80,7 +89,7 @@ exports.updatePassword = async (req, res) => {
   return ApiResponse.send(res, "Parolingiz muvaffaqiyatli o'zgartirildi! 🔒");
 };
 
-// 4. Akkauntni o'chirish (DELETE)
+// 4. Akkauntni o'chirish
 exports.deleteAccount = async (req, res) => {
   const userId = req.user.id;
 
@@ -89,8 +98,6 @@ exports.deleteAccount = async (req, res) => {
     throw new AppError("O'chirish uchun foydalanuvchi topilmadi.", 404);
   }
 
-  // Foydalanuvchi o'chganda uning savati, manzillari va boshqa bog'liq narsalari CASCADE orqali o'chib ketadi
   await user.destroy();
-
   return ApiResponse.send(res, "Sizning akkauntingiz muvaffaqiyatli o'chirildi! 🗑️", null);
 };

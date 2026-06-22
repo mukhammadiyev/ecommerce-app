@@ -1,40 +1,56 @@
-import { useState } from "react";
+import { useState, useEffect } from "react"; // 👈 useEffect qo'shildi
 import { FaBagShopping, FaUserLarge } from "react-icons/fa6";
-import { Link } from "react-router-dom";
+import { Link } from "react-router-dom"; // 👈 Link importi shu yerda
 import Logo from "../../../public/logo.png";
 import useCartStore from "../../hooks/useCartStore.js";
 
 function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const cartCount = useCartStore((state) =>
-    state.items.reduce((sum, i) => sum + i.quantity, 0),
-  );
+  
+  // Zustand store-dan ma'lumotlarni va yuklash funksiyasini olamiz
+  const cartItems = useCartStore((state) => state.items);
+  const fetchCart = useCartStore((state) => state.fetchCart); // 👈 fetchCart olindi
+
+  // 🔥 Sahifa o'zgarganda yoki yuklanganda savatni har doim backend-dan yangilab turish
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      fetchCart();
+    }
+  }, [fetchCart]);
+
+  // Savatdagi mahsulotlar sonini hisoblash (xavfsiz hisob-kitob)
+  const cartCount = cartItems.reduce((sum, i) => sum + (i.quantity || i.qty || 0), 0);
 
   return (
-    <nav className="w-full sticky top-0 z-100 bg-white">
+    <nav className="w-full sticky top-0 z-100 bg-white shadow-sm">
       <div className="w-full container mx-auto px-8 2xl:px-27 py-5 2xl:py-10">
         <div className="w-full flex items-center justify-between">
-          <img src={Logo} alt="" />
+          <Link to="/">
+            <img src={Logo} alt="Logo" />
+          </Link>
+          
+          {/* ⚡ HTML <a> teglari React Router <Link> teglari bilan almashtirildi */}
           <ul className="hidden lg:flex items-center justify-center gap-10">
             <li>
-              <a href="/" className="font-oxygen text-base">
+              <Link to="/" className="font-oxygen text-base text-gray-700 hover:text-black transition-colors">
                 Home
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="/products" className="font-oxygen text-base">
+              <Link to="/products" className="font-oxygen text-base text-gray-700 hover:text-black transition-colors">
                 Products
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="/contact" className="font-oxygen text-base">
+              <Link to="/contact" className="font-oxygen text-base text-gray-700 hover:text-black transition-colors">
                 Contact Us
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="/blogs" className="font-oxygen text-base">
+              <Link to="/blogs" className="font-oxygen text-base text-gray-700 hover:text-black transition-colors">
                 Blog
-              </a>
+              </Link>
             </li>
           </ul>
 
@@ -43,9 +59,9 @@ function Navbar() {
             <div className="relative">
               <button
                 onClick={() => setDropdownOpen((prev) => !prev)}
-                className="flex items-center gap-2 cursor-pointer"
+                className="flex items-center gap-2 cursor-pointer focus:outline-none"
               >
-                <FaUserLarge className="text-xl" />
+                <FaUserLarge className="text-xl text-gray-800 hover:text-black" />
               </button>
 
               {dropdownOpen && (
@@ -62,7 +78,7 @@ function Navbar() {
                     onClick={() => setDropdownOpen(false)}
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                   >
-                    Payment & Billing
+                    Payment &amp; Billing
                   </Link>
                   <Link
                     to="/account/settings"
@@ -76,10 +92,10 @@ function Navbar() {
             </div>
 
             {/* Cart icon with badge */}
-            <Link to="/cart" className="relative">
-              <FaBagShopping className="text-xl cursor-pointer" />
+            <Link to="/cart" className="relative p-1 inline-block">
+              <FaBagShopping className="text-xl cursor-pointer text-gray-800 hover:text-black" />
               {cartCount > 0 && (
-                <span className="absolute -top-2 -right-2 min-w-4.5 h-4.5 px-1 flex items-center justify-center rounded-full bg-[#1a1a2e] text-white text-[10px] font-bold leading-none">
+                <span className="absolute -top-1 -right-1 min-w-4.5 h-4.5 px-1 flex items-center justify-center rounded-full bg-[#1a1a2e] text-white text-[10px] font-bold leading-none">
                   {cartCount > 99 ? "99+" : cartCount}
                 </span>
               )}

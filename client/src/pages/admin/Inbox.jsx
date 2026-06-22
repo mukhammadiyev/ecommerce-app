@@ -182,7 +182,7 @@ function EmailDetail({ email, onClose, onDelete, onArchive, onReplySuccess, onSt
       const resData = await response.json();
 
       if (response.ok) {
-        alert("Javob foydalanuvchi emailiga muvaffaqiyatli yuborildi! ✉️");
+        ("Javob foydalanuvchi emailiga muvaffaqiyatli yuborildi! ✉️");
         if (onReplySuccess) {
           onReplySuccess(email.id, replyText);
         }
@@ -192,7 +192,7 @@ function EmailDetail({ email, onClose, onDelete, onArchive, onReplySuccess, onSt
       }
     } catch (error) {
       console.error("Javob yuborishda xatolik:", error);
-      alert("Tarmoq xatosi tufayli javob yuborilmadi.");
+      ("Tarmoq xatosi tufayli javob yuborilmadi.");
     } finally {
       setSending(false);
     }
@@ -570,13 +570,13 @@ export default function Inbox() {
 
           setEmails((prevEmails) => prevEmails.filter((email) => email.id !== id));
           setSelected(null);
-          alert("Xabar bazadan butunlay o'chirildi! 🗑️");
+          ("Xabar bazadan butunlay o'chirildi! 🗑️");
         } else {
-          alert(`O'chirishning iloji bo'lmadi: ${resData.message}`);
+          (`O'chirishning iloji bo'lmadi: ${resData.message}`);
         }
       } catch (error) {
         console.error("O'chirishda tarmoq xatoligi:", error);
-        alert("Tarmoq xatosi tufayli xabarni o'chirib bo'lmadi.");
+        ("Tarmoq xatosi tufayli xabarni o'chirib bo'lmadi.");
       }
     } 
     else {
@@ -590,7 +590,7 @@ export default function Inbox() {
         prevEmails.map((e) => (e.id === id ? { ...e, folder: "bin" } : e))
       );
       setSelected(null);
-      alert("Xabar savatga ko'chirildi. 📁");
+      ("Xabar savatga ko'chirildi. 📁");
     }
   };
 
@@ -651,10 +651,10 @@ export default function Inbox() {
         localStorage.setItem("bin_messages", JSON.stringify(updatedIds));
 
         setEmails((es) => es.filter((e) => !checked.has(e.id)));
-        alert("Tanlangan xabarlar bazadan butunlay o'chirildi! 🗑️");
+        ("Tanlangan xabarlar bazadan butunlay o'chirildi! 🗑️");
       } catch (error) {
         console.error("Guruhli o'chirishda xatolik:", error);
-        alert("Ba'zi xabarlarni o'chirishda muammo bo'ldi.");
+        ("Ba'zi xabarlarni o'chirishda muammo bo'ldi.");
       }
     } 
     else {
@@ -668,7 +668,7 @@ export default function Inbox() {
       localStorage.setItem("bin_messages", JSON.stringify(deletedIds));
 
       setEmails((es) => es.map((e) => (checked.has(e.id) ? { ...e, folder: "bin" } : e)));
-      alert("Tanlangan xabarlar savatga ko'chirildi. 📁");
+      ("Tanlangan xabarlar savatga ko'chirildi. 📁");
     }
     setChecked(new Set());
     setSelected(null);

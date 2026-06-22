@@ -1,50 +1,74 @@
 import { gsap } from "gsap";
 import {
-  Boxes,
-  Calendar,
-  CheckSquare,
   ChevronLeft,
   ChevronRight,
-  FileText,
-  Heart,
   Inbox,
-  Layers,
   LayoutDashboard,
   ListOrdered,
   LogOut,
   Package,
-  Phone,
   Settings,
-  Table2,
   Tag,
-  Users,
+  BookOpen,
   Zap,
-  BookOpen
+  Mail // 🔥 Newsletter uchun ikonka
 } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-
-const NAV_GROUPS = [
-  {
-    items: [
-      { label: "Dashboard", icon: LayoutDashboard, to: "/admin" },
-      { label: "Products", icon: Package, to: "/admin/products" },
-      { label: "Inbox", icon: Inbox, to: "/admin/inbox" },
-      { label: "Blogs", icon: BookOpen, to: "/admin/blogs" }, // ✅ To'g'rilandi
-      { label: "Order Lists", icon: ListOrdered, to: "/admin/orders" },
-    ],
-  },
-  // ... qolgan guruhlar
-];
-const BOTTOM_ITEMS = [
-  { label: "Settings", icon: Settings, to: "/admin/settings" },
-  { label: "Logout", icon: LogOut, to: "/logout", danger: true },
-];
+import adminOrderService from "../../services/orderService"; // 🔥 To'g'ri import yo'li
 
 export default function AdminSidebar({ collapsed, onToggle }) {
   const sidebarRef = useRef(null);
   const itemsRef = useRef([]);
   const location = useLocation();
+  const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
+
+  // ── 🔥 JONLI BUYURTMALAR SONINI OLISH (BADGE UCHUN) ──
+  useEffect(() => {
+    const fetchPendingCount = async () => {
+      try {
+        const res = await adminOrderService.getAllOrdersForAdmin();
+        if (res.success && res.data) {
+          const count = res.data.filter(order => order.status === 'pending').length;
+          setPendingOrdersCount(count);
+        }
+      } catch (err) {
+        console.log("Sidebar badge yuklashda xatolik:", err.message);
+      }
+    };
+
+    fetchPendingCount();
+    const interval = setInterval(fetchPendingCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Navigatsiya menyusi
+  const NAV_GROUPS = [
+    {
+      items: [
+        { label: "Dashboard", icon: LayoutDashboard, to: "/admin" },
+        { label: "Products", icon: Package, to: "/admin/products" },
+        { label: "Coupons", icon: Tag, to: "/admin/coupons" }, 
+        { label: "Inbox", icon: Inbox, to: "/admin/inbox" },
+        { label: "Blogs", icon: BookOpen, to: "/admin/blogs" },
+        
+        // 🔥 NEWSLETTER OBUNACHILARI TUGMASI
+        { label: "Subscribers", icon: Mail, to: "/admin/newsletter" },
+        
+        { 
+          label: "Order Lists", 
+          icon: ListOrdered, 
+          to: "/admin/orders", 
+          badge: pendingOrdersCount > 0 ? pendingOrdersCount : null 
+        },
+      ],
+    },
+  ];
+
+  const BOTTOM_ITEMS = [
+    { label: "Settings", icon: Settings, to: "/admin/settings" },
+    { label: "Logout", icon: LogOut, to: "/logout", danger: true },
+  ];
 
   // ── Mount: slide in from left ──────────────────────────────────────
   useEffect(() => {
@@ -91,7 +115,7 @@ export default function AdminSidebar({ collapsed, onToggle }) {
       style={{ width: 240 }}
       className="relative flex flex-col h-screen bg-[#1a1f2e] border-r border-white/5 shrink-0 overflow-hidden"
     >
-      {/* ── Logo ─────────────────────────────────────────────────── */}
+      {/* ── Logo ── */}
       <div className="flex items-center gap-3 px-4 h-16 border-b border-white/5 shrink-0">
         <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-[#6c63ff] shadow-lg shadow-[#6c63ff]/30 shrink-0">
           <Zap size={17} className="text-white" />
@@ -103,7 +127,7 @@ export default function AdminSidebar({ collapsed, onToggle }) {
         )}
       </div>
 
-      {/* ── Nav ──────────────────────────────────────────────────── */}
+      {/* ── Nav ── */}
       <nav
         className="flex-1 overflow-y-auto overflow-x-hidden py-3 space-y-0.5"
         style={{ scrollbarWidth: "none" }}
@@ -150,18 +174,18 @@ export default function AdminSidebar({ collapsed, onToggle }) {
                       </span>
                     )}
 
-                    {/* Badge — visible text when expanded, dot when collapsed */}
+                    {/* Badge mantiqi */}
                     {item.badge && !collapsed && (
-                      <span className="ml-auto text-[10px] font-bold bg-[#ff6584] text-white rounded-full w-5 h-5 flex items-center justify-center shrink-0">
+                      <span className="ml-auto text-[10px] font-bold bg-[#ff6584] text-white rounded-full w-5 h-5 flex items-center justify-center shrink-0 animate-pulse">
                         {item.badge}
                       </span>
                     )}
                     {item.badge && collapsed && (
-                      <span className="absolute top-2 right-2 w-2 h-2 bg-[#ff6584] rounded-full" />
+                      <span className="absolute top-2 right-2 w-2 h-2 bg-[#ff6584] rounded-full animate-ping" />
                     )}
                   </NavLink>
 
-                  {/* Tooltip when collapsed */}
+                  {/* Tooltip */}
                   {collapsed && (
                     <div
                       className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-3
@@ -180,7 +204,7 @@ export default function AdminSidebar({ collapsed, onToggle }) {
         ))}
       </nav>
 
-      {/* ── Bottom items ─────────────────────────────────────────── */}
+      {/* ── Bottom items ── */}
       <div className="border-t border-white/5 py-2 px-2 shrink-0">
         {BOTTOM_ITEMS.map((item) => {
           const Icon = item.icon;
@@ -222,15 +246,10 @@ export default function AdminSidebar({ collapsed, onToggle }) {
         })}
       </div>
 
-      {/* ── Collapse toggle — sits INSIDE sidebar at the bottom of logo row ── */}
+      {/* ── Collapse toggle ── */}
       <button
         onClick={onToggle}
-        className="absolute top-3 right-4 z-40
-          w-10 h-10 rounded-sm
-          bg-[#6c63ff] border-2 border-[#151929]
-          flex items-center justify-center
-          text-white shadow-lg
-          hover:bg-[#5a52e0] transition-colors duration-150"
+        className="absolute top-3 right-4 z-40 w-10 h-10 rounded-sm bg-[#6c63ff] border-2 border-[#151929] flex items-center justify-center text-white shadow-lg hover:bg-[#5a52e0] transition-colors duration-150"
       >
         {collapsed ? <ChevronRight size={11} /> : <ChevronLeft size={11} />}
       </button>

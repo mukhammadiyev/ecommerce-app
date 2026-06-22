@@ -4,7 +4,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 
 // ==========================================
-// 🚀 ROUTERLARNI IMPORT QILISH (100% Rasmdagi nomlar bilan mos)
+// 🚀 ROUTERLARNI IMPORT QILISH
 // ==========================================
 const authRoutes = require('./routes/auth.routes');
 const productRoutes = require('./routes/products.routes');
@@ -20,7 +20,8 @@ const contactRoutes = require('./routes/contacts.routes');
 const newsletterRoutes = require('./routes/newsletter.routes');
 const analyticsRoutes = require('./routes/analytics.routes'); 
 const invoicesRoutes = require('./routes/invoices.routes');   
-const emailRoutes = require('./routes/email.routes'); // 🆕 Rasmdagi email routeri qo'shildi
+const emailRoutes = require('./routes/email.routes'); 
+const couponRoutes = require('./routes/coupon.routes'); // 🆕 Kupon routeri import qilindi
 
 const errorHandler = require('./middleware/errorHandler'); 
 const globalLimiter = require('./middleware/rateLimiter'); 
@@ -31,7 +32,7 @@ const app = express();
 app.use(helmet());
 app.use(cors());
 
-// 🔥 TUZATILDI: Base64 rasmlar sig'ishi uchun limit 50mb ga oshirildi
+// Base64 rasmlar sig'ishi uchun limit
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -57,7 +58,8 @@ app.use('/api/contacts', contactRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/analytics', analyticsRoutes); 
 app.use('/api/invoices', invoicesRoutes);   
-app.use('/api/email', emailRoutes); // 🆕 Email yo'li ulandi
+app.use('/api/email', emailRoutes); 
+app.use('/api/coupons', couponRoutes); // 🆕 Kupon liniyasi ulandi
 
 // Server holatini tekshirish
 app.get('/api/health', (req, res) => {

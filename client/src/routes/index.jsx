@@ -7,6 +7,9 @@ import AdminProducts from "../pages/admin/AdminProducts.jsx";
 import Dashboard from "../pages/admin/Dashboard.jsx";
 import AdminBlogs from "../pages/admin/AdminBlogs.jsx";
 import Inbox from "../pages/admin/Inbox.jsx";
+import AdminCoupons from "../pages/admin/Coupons.jsx"; 
+import AdminOrders from "../pages/admin/Orders.jsx"; 
+import AdminNewsletter from "../pages/admin/Newsletter.jsx"; // 🔥 Newsletter importi
 import Login from "../pages/auth/Login.jsx";
 import Register from "../pages/auth/Register.jsx";
 import Cart from "../pages/public/Cart.jsx";
@@ -18,8 +21,8 @@ import ProductDetails from "../pages/public/ProductDetails.jsx";
 import Products from "../pages/public/Products.jsx";
 import AdminRoute from "./AdminRoute.jsx";
 import ProtectedRoute from "./ProtectedRoute.jsx";
-import Blogs from '../pages/public/Blogs.jsx'
-import BlogDetails from '../pages/public/BlogDetails.jsx'
+import Blogs from '../pages/public/Blogs.jsx';
+import BlogDetails from '../pages/public/BlogDetails.jsx';
 
 const router = createBrowserRouter([
   {
@@ -43,7 +46,7 @@ const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <AccountInformation />, // ← This renders via <Outlet />
+            element: <AccountInformation />,
           },
           {
             path: "billing",
@@ -71,12 +74,25 @@ const router = createBrowserRouter([
         element: <AdminProducts />,
       },
       {
+        path: "coupons", 
+        element: <AdminCoupons />,
+      },
+      {
         path: "inbox",
         element: <Inbox />,
       },
       {
         path: "blogs",
         element: <AdminBlogs />,
+      },
+      {
+        path: "orders",
+        element: <AdminOrders />,
+      },
+      // 🔥 NEWLETTER YO'NALISHI SHU YERDA:
+      {
+        path: "newsletter",
+        element: <AdminNewsletter />,
       },
       { path: "*", element: <NotFound /> },
     ],
