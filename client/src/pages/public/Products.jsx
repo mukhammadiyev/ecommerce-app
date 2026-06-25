@@ -202,7 +202,7 @@ export default function Products() {
               </div>
             ) : filteredProducts.length > 0 ? (
               /* Mahsulotlar mavjud bo'lgandagi holat */
-              <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div ref={gridRef} className="grid grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredProducts.map((product) => (
                   <div key={product.id || product._id}>
                     <ProductCard

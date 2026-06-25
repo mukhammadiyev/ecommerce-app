@@ -240,6 +240,7 @@ const PaymentBilling = () => {
 
         {/* Add New Card Button */}
         <button
+        aria-label='add to card'
           ref={addButtonRef}
           onClick={handleAddNewCard}
           className="w-full md:w-fit px-8 py-3 sm:py-4 bg-gray-900 text-white font-medium text-sm sm:text-base rounded-full hover:bg-gray-800 transition flex items-center justify-center gap-2"

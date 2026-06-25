@@ -158,7 +158,7 @@ useEffect(() => {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-white/5 bg-white/[0.02] text-xs font-semibold text-white/45 uppercase tracking-wider">
+                  <tr className="border-b border-white/5 bg-white/2 text-xs font-semibold text-white/45 uppercase tracking-wider">
                     <th className="p-4 px-6">ID</th>
                     <th className="p-4 px-6">Email Manzil</th>
                     <th className="p-4 px-6">Obuna Bo'lgan Sana</th>
@@ -166,7 +166,7 @@ useEffect(() => {
                 </thead>
                 <tbody className="divide-y divide-white/5 text-sm">
                   {filteredSubscribers.map((sub, index) => (
-                    <tr key={sub.id || index} className="hover:bg-white/[0.01] transition-colors">
+                    <tr key={sub.id || index} className="hover:bg-white/1 transition-colors">
                       <td className="p-4 px-6 font-mono text-white/45">#{String(index + 1).padStart(4, '0')}</td>
                       <td className="p-4 px-6 font-medium text-white/90">
                         <div className="flex items-center gap-2">

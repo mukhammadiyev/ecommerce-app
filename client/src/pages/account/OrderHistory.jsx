@@ -135,6 +135,7 @@ export default function OrderHistory() {
                   {/* Faqat pending va processing holatidagina bekor qilish mumkin */}
                   {(order.status === 'pending' || order.status === 'processing') && (
                     <button
+                    aria-label='cancel'
                       onClick={() => handleCancelOrder(order.id)}
                       className="px-4 py-2 text-xs font-bold border border-rose-200 text-rose-600 rounded-xl hover:bg-rose-50 active:bg-rose-100 transition-all cursor-pointer bg-white shadow-sm hover:shadow-none"
                     >

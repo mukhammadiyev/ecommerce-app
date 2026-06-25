@@ -1,45 +1,83 @@
 import { createBrowserRouter } from "react-router-dom";
 import PublicLayout from "../layouts/PublicLayout.jsx";
-import AccountInformation from "../pages/account/AccountInformation.jsx";
-import PaymentBilling from "../pages/account/PaymentBilling.jsx";
-import Settings from "../pages/account/Settings.jsx";
-import OrderHistory from "../pages/account/OrderHistory.jsx"; // 🔥 Yangi qo'shildi
-import AdminProducts from "../pages/admin/AdminProducts.jsx";
-import Dashboard from "../pages/admin/Dashboard.jsx";
-import AdminBlogs from "../pages/admin/AdminBlogs.jsx";
-import Inbox from "../pages/admin/Inbox.jsx";
-import AdminCoupons from "../pages/admin/Coupons.jsx"; 
-import AdminOrders from "../pages/admin/Orders.jsx"; 
-import AdminNewsletter from "../pages/admin/Newsletter.jsx"; 
-import Login from "../pages/auth/Login.jsx";
-import Register from "../pages/auth/Register.jsx";
-import Cart from "../pages/public/Cart.jsx";
-import Checkout from "../pages/public/Checkout.jsx";
-import Contact from "../pages/public/Contact.jsx";
-import Home from "../pages/public/Home.jsx";
-import NotFound from "../pages/public/NotFound.jsx";
-import ProductDetails from "../pages/public/ProductDetails.jsx";
-import Products from "../pages/public/Products.jsx";
 import AdminRoute from "./AdminRoute.jsx";
 import ProtectedRoute from "./ProtectedRoute.jsx";
-import Blogs from '../pages/public/Blogs.jsx';
-import BlogDetails from '../pages/public/BlogDetails.jsx';
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <PublicLayout />,
     children: [
-      { index: true, element: <Home /> },
-      { path: "products", element: <Products /> },
-      { path: "products/:id", element: <ProductDetails /> },
-      { path: "cart", element: <Cart /> },
-      { path: "checkout", element: <Checkout /> },
-      { path: "contact", element: <Contact /> },
-      { path: "login", element: <Login /> },
-      { path: "register", element: <Register /> },
-      { path: "blogs", element: <Blogs /> },
-      { path: "blogs/:id", element: <BlogDetails /> },
+      {
+        index: true,
+        lazy: () =>
+          import("../pages/public/Home.jsx").then((m) => ({
+            Component: m.default,
+          })),
+      },
+      {
+        path: "products",
+        lazy: () =>
+          import("../pages/public/Products.jsx").then((m) => ({
+            Component: m.default,
+          })),
+      },
+      {
+        path: "products/:id",
+        lazy: () =>
+          import("../pages/public/ProductDetails.jsx").then((m) => ({
+            Component: m.default,
+          })),
+      },
+      {
+        path: "cart",
+        lazy: () =>
+          import("../pages/public/Cart.jsx").then((m) => ({
+            Component: m.default,
+          })),
+      },
+      {
+        path: "checkout",
+        lazy: () =>
+          import("../pages/public/Checkout.jsx").then((m) => ({
+            Component: m.default,
+          })),
+      },
+      {
+        path: "contact",
+        lazy: () =>
+          import("../pages/public/Contact.jsx").then((m) => ({
+            Component: m.default,
+          })),
+      },
+      {
+        path: "login",
+        lazy: () =>
+          import("../pages/auth/Login.jsx").then((m) => ({
+            Component: m.default,
+          })),
+      },
+      {
+        path: "register",
+        lazy: () =>
+          import("../pages/auth/Register.jsx").then((m) => ({
+            Component: m.default,
+          })),
+      },
+      {
+        path: "blogs",
+        lazy: () =>
+          import("../pages/public/Blogs.jsx").then((m) => ({
+            Component: m.default,
+          })),
+      },
+      {
+        path: "blogs/:id",
+        lazy: () =>
+          import("../pages/public/BlogDetails.jsx").then((m) => ({
+            Component: m.default,
+          })),
+      },
 
       {
         path: "account",
@@ -47,23 +85,41 @@ const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <AccountInformation />,
+            lazy: () =>
+              import("../pages/account/AccountInformation.jsx").then((m) => ({
+                Component: m.default,
+              })),
           },
           {
-            path: "orders", // 🔥 Navbar-dagi link bilan mos tushadi (/account/orders)
-            element: <OrderHistory />,
+            path: "orders",
+            lazy: () =>
+              import("../pages/account/OrderHistory.jsx").then((m) => ({
+                Component: m.default,
+              })),
           },
           {
             path: "billing",
-            element: <PaymentBilling />,
+            lazy: () =>
+              import("../pages/account/PaymentBilling.jsx").then((m) => ({
+                Component: m.default,
+              })),
           },
           {
             path: "settings",
-            element: <Settings />,
+            lazy: () =>
+              import("../pages/account/Settings.jsx").then((m) => ({
+                Component: m.default,
+              })),
           },
         ],
       },
-      { path: "*", element: <NotFound /> },
+      {
+        path: "*",
+        lazy: () =>
+          import("../pages/public/NotFound.jsx").then((m) => ({
+            Component: m.default,
+          })),
+      },
     ],
   },
   {
@@ -72,33 +128,60 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Dashboard />,
+        lazy: () =>
+          import("../pages/admin/Dashboard.jsx").then((m) => ({
+            Component: m.default,
+          })),
       },
       {
         path: "products",
-        element: <AdminProducts />,
+        lazy: () =>
+          import("../pages/admin/AdminProducts.jsx").then((m) => ({
+            Component: m.default,
+          })),
       },
       {
-        path: "coupons", 
-        element: <AdminCoupons />,
+        path: "coupons",
+        lazy: () =>
+          import("../pages/admin/Coupons.jsx").then((m) => ({
+            Component: m.default,
+          })),
       },
       {
         path: "inbox",
-        element: <Inbox />,
+        lazy: () =>
+          import("../pages/admin/Inbox.jsx").then((m) => ({
+            Component: m.default,
+          })),
       },
       {
         path: "blogs",
-        element: <AdminBlogs />,
+        lazy: () =>
+          import("../pages/admin/AdminBlogs.jsx").then((m) => ({
+            Component: m.default,
+          })),
       },
       {
         path: "orders",
-        element: <AdminOrders />,
+        lazy: () =>
+          import("../pages/admin/Orders.jsx").then((m) => ({
+            Component: m.default,
+          })),
       },
       {
         path: "newsletter",
-        element: <AdminNewsletter />,
+        lazy: () =>
+          import("../pages/admin/Newsletter.jsx").then((m) => ({
+            Component: m.default,
+          })),
       },
-      { path: "*", element: <NotFound /> },
+      {
+        path: "*",
+        lazy: () =>
+          import("../pages/public/NotFound.jsx").then((m) => ({
+            Component: m.default,
+          })),
+      },
     ],
   },
 ]);

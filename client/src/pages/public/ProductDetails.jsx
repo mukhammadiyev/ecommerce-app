@@ -468,7 +468,7 @@ export default function ProductDetails() {
                   −
                 </button>
                 
-                <span className="px-4 text-sm font-semibold text-[#1a1a2e] min-w-[32px] text-center">
+                <span className="px-4 text-sm font-semibold text-[#1a1a2e] min-w-8 text-center">
                   {maxStock === 0 ? 0 : qty}
                 </span>
                 

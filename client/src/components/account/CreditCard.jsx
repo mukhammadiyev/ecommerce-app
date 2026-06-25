@@ -124,7 +124,9 @@ function CreditCard({
               </span>
             ) : (
               <button
+
                 type="button"
+                aria-label="set default card"
                 onClick={() => handleSetDefault && handleSetDefault(currentId)}
                 className="px-3 py-1 border border-gray-300 text-gray-700 text-xs font-medium rounded hover:bg-gray-50 transition whitespace-nowrap"
               >
@@ -193,6 +195,7 @@ function CreditCard({
             ) : (
               <button
                 type="button"
+                aria-label="set default card"
                 onClick={() => handleSetDefault && handleSetDefault(currentId)}
                 className="px-3 py-2 border border-gray-300 text-gray-700 text-xs font-medium rounded hover:bg-gray-50 transition flex-1"
               >

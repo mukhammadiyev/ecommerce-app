@@ -188,6 +188,7 @@ const Settings = () => {
 
           <div className="pt-2">
             <button
+            aria-label='save changes'
               ref={buttonRef}
               type="submit"
               disabled={loading}

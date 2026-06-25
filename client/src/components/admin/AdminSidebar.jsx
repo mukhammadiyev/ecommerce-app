@@ -249,6 +249,7 @@ export default function AdminSidebar({ collapsed, onToggle }) {
       {/* ── Collapse toggle ── */}
       <button
         onClick={onToggle}
+        aria-label='collapse'
         className="absolute top-3 right-4 z-40 w-10 h-10 rounded-sm bg-[#6c63ff] border-2 border-[#151929] flex items-center justify-center text-white shadow-lg hover:bg-[#5a52e0] transition-colors duration-150"
       >
         {collapsed ? <ChevronRight size={11} /> : <ChevronLeft size={11} />}

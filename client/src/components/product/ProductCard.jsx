@@ -147,6 +147,7 @@ export default function ProductCard({
           </div>
 
           <button
+          aria-label='add to cart'
             onClick={handleAddToCart}
             aria-label={`Add ${name} to cart`}
             className="flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full border border-gray-300 text-gray-600 hover:bg-[#1a1a2e] hover:text-white hover:border-[#1a1a2e] transition-colors shrink-0"

@@ -36,7 +36,7 @@ function BlogDetailsSkeleton() {
   return (
     <div className="w-full container mx-auto px-5 sm:px-8 2xl:px-27 py-14 sm:py-8 lg:py-14 2xl:py-12 animate-pulse">
       <div className="h-4 w-16 mb-6 bg-gray-200 rounded-full" />
-      <div className="w-full h-52 sm:h-64 lg:h-72 xl:h-80 2xl:h-[400px] bg-gray-200 rounded-2xl mb-6" />
+      <div className="w-full h-52 sm:h-64 lg:h-72 xl:h-80 2xl:h-100 bg-gray-200 rounded-2xl mb-6" />
       <div className="h-8 w-3/4 bg-gray-200 rounded-lg mb-4" />
       <div className="h-4 w-1/2 bg-gray-200 rounded-lg mb-6" />
       <div className="space-y-3">
@@ -184,7 +184,7 @@ export default function BlogDetails() {
         {/* 1. Tepadagi Katta Muqova Rasmi (Rasmda ko'rsatilganidek) */}
         <div
           ref={heroRef}
-          className="w-full h-52 sm:h-72 lg:h-96 xl:h-[420px] rounded-[24px] overflow-hidden bg-gray-200 opacity-0 shadow-sm mb-8"
+          className="w-full h-52 sm:h-72 lg:h-96 xl:h-105 rounded-3xl overflow-hidden bg-gray-200 opacity-0 shadow-sm mb-8"
         >
           {blog.image_url ? (
             <img src={blog.image_url} alt={blog.title} className="w-full h-full object-cover" />

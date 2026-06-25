@@ -82,6 +82,7 @@ export default function AdminNavbar({ onMenuToggle }) {
           {/* Hamburger (mobile only) */}
           <button
             onClick={onMenuToggle}
+            aria-label='toggle menu'
             className="lg:hidden p-2 rounded-lg text-white/50 hover:text-white hover:bg-white/5 transition-colors shrink-0"
           >
             <Menu size={20} />
@@ -99,6 +100,7 @@ export default function AdminNavbar({ onMenuToggle }) {
 
           {/* Mobile search icon */}
           <button
+          aria-label='open search'
             onClick={() => setSearchOpen(true)}
             className="sm:hidden p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors"
           >
@@ -110,6 +112,7 @@ export default function AdminNavbar({ onMenuToggle }) {
         <div className="flex items-center gap-0.5 shrink-0">
           {/* Dark mode */}
           <button
+            aria-label='toogle mode'
             onClick={() => setDarkMode(!darkMode)}
             className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors"
           >
@@ -118,6 +121,7 @@ export default function AdminNavbar({ onMenuToggle }) {
 
           {/* Bell */}
           <button
+          aria-label='notifications'
             ref={bellRef}
             className="relative p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors"
           >
@@ -130,6 +134,7 @@ export default function AdminNavbar({ onMenuToggle }) {
           {/* Language — flag only on mobile, flag+label on sm+ */}
           <div className="relative" data-lang>
             <button
+            aria-label='change language'
               onClick={() => {
                 setLangOpen(!langOpen);
                 setProfileOpen(false);
@@ -153,6 +158,7 @@ export default function AdminNavbar({ onMenuToggle }) {
               >
                 {LANGUAGES.map((lang) => (
                   <button
+                  aria-label='change language'
                     key={lang.code}
                     onClick={() => {
                       setActiveLang(lang);
@@ -179,6 +185,7 @@ export default function AdminNavbar({ onMenuToggle }) {
           {/* Profile */}
           <div className="relative" data-profile>
             <button
+            aria-label='profile'
               onClick={() => {
                 setProfileOpen(!profileOpen);
                 setLangOpen(false);
@@ -218,6 +225,7 @@ export default function AdminNavbar({ onMenuToggle }) {
                 </div>
                 {["Profile", "Account Settings", "Help"].map((item) => (
                   <button
+                  aria-label='settings , profile help'
                     key={item}
                     className="w-full text-left px-4 py-2.5 text-sm text-white/50 hover:text-white hover:bg-white/5 transition-colors"
                   >
@@ -225,7 +233,7 @@ export default function AdminNavbar({ onMenuToggle }) {
                   </button>
                 ))}
                 <div className="border-t border-white/5">
-                  <button className="w-full text-left px-4 py-2.5 text-sm text-[#ff6584]/70 hover:text-[#ff6584] hover:bg-[#ff6584]/10 transition-colors">
+                  <button aria-label='sign out' className="w-full text-left px-4 py-2.5 text-sm text-[#ff6584]/70 hover:text-[#ff6584] hover:bg-[#ff6584]/10 transition-colors">
                     Sign out
                   </button>
                 </div>
@@ -246,6 +254,7 @@ export default function AdminNavbar({ onMenuToggle }) {
             className="flex-1 bg-transparent text-sm text-white placeholder-white/25 outline-none"
           />
           <button
+          aria-label='close search'
             onClick={() => setSearchOpen(false)}
             className="p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors"
           >

@@ -264,10 +264,10 @@ const AddCreditCard = ({ onSubmit, onCancel, isModal = false }) => {
 
           {/* Buttons */}
           <div className={`flex gap-3 sm:gap-4 ${isModal ? "pt-4" : "pt-6"}`}>
-            <button type="button" onClick={onCancel} ref={cancelButtonRef} className="flex-1 px-4 sm:px-6 py-2 sm:py-3 border border-gray-300 text-gray-700 font-medium text-sm sm:text-base rounded-lg hover:bg-gray-50 transition">
+            <button aria-label='cancel' type="button" onClick={onCancel} ref={cancelButtonRef} className="flex-1 px-4 sm:px-6 py-2 sm:py-3 border border-gray-300 text-gray-700 font-medium text-sm sm:text-base rounded-lg hover:bg-gray-50 transition">
               Cancel
             </button>
-            <button type="submit" ref={submitButtonRef} disabled={isSubmitting} className="flex-1 px-4 sm:px-6 py-2 sm:py-3 bg-gray-900 text-white font-medium text-sm sm:text-base rounded-lg hover:bg-gray-800 transition disabled:opacity-50">
+            <button aria-label='submit' type="submit" ref={submitButtonRef} disabled={isSubmitting} className="flex-1 px-4 sm:px-6 py-2 sm:py-3 bg-gray-900 text-white font-medium text-sm sm:text-base rounded-lg hover:bg-gray-800 transition disabled:opacity-50">
               {isSubmitting ? "Adding..." : "Add Card"}
             </button>
           </div>

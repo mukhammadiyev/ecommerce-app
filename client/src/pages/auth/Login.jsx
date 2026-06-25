@@ -38,7 +38,7 @@ function EyeIcon({ open }) {
 
 export default function Login() {
   const navigate = useNavigate();
-  
+
   // 🛠️ State nomini backend kutayotgan 'email' kalitiga moslashtirdik
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPw, setShowPw] = useState(false);
@@ -73,7 +73,7 @@ export default function Login() {
       );
   }, []);
 
-const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -90,22 +90,25 @@ const handleSubmit = async (e) => {
     try {
       // 🌟 Xizmat faylingiz (authService) obyekt ichida 'identifier' kutyapti!
       // Shuning uchun form.email qiymatini 'identifier' kaliti bilan yuboramiz.
-      const data = await login({ 
+      const data = await login({
         identifier: form.email, // 👈 kalit nomi 'identifier' bo'ldi
-        password: form.password 
+        password: form.password,
       });
-      
+
       // Muvaffaqiyatli kirgandan so'ng tokenni authService'ning o'zi localStorage'ga yozadi.
       // Endi faqat ro'lga qarab sahifani yo'naltiramiz:
       if (data && (data.user?.role === "admin" || data.role === "admin")) {
         // Agar admin bo'lsa, to'g'ridan-to'g'ri bloglar boshqaruviga o'tkaziladi
         window.location.href = "/admin/blogs";
       } else {
-        window.location.href = "/account"; 
+        window.location.href = "/account";
       }
     } catch (err) {
       console.error(err);
-      setError(err.response?.data?.message || "Incorrect email or password. Please try again.");
+      setError(
+        err.response?.data?.message ||
+          "Incorrect email or password. Please try again.",
+      );
       shake();
     } finally {
       setLoading(false);
@@ -200,16 +203,6 @@ const handleSubmit = async (e) => {
               >
                 {loading ? "Logging in…" : "Login"}
               </button>
-            </div>
-
-            {/* forgot password */}
-            <div className="anim-item text-center">
-              <Link
-                to="/forgot-password"
-                className="text-sm text-[#1a1a2e] underline underline-offset-2 hover:opacity-70 transition-opacity"
-              >
-                Forgot Your Password
-              </Link>
             </div>
           </form>
         </div>

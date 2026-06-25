@@ -187,6 +187,7 @@ const AccountInformation = () => {
             {/* Logout Button */}
             <button
               onClick={handleLogout}
+              aria-label='logout'
               className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-red-500 hover:border-red-200 transition shrink-0"
             >
               <svg

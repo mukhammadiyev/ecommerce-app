@@ -1,7 +1,7 @@
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useEffect, useRef, useState } from "react";
-import logo from "../../../public/footer_logo.png";
+import logo from "@/assets/footer_logo.png";
 import newsletterService from "../../services/newsletterService";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -146,7 +146,7 @@ export default function Footer() {
         </h2>
 
         {/* ── Dinamik Konteyner (GSAP endi to'g'ridan-to'g'ri shuni kuzatadi) ── */}
-        <div ref={dynamicContainerRef} className="flex flex-col items-center justify-center min-h-[110px]">
+        <div ref={dynamicContainerRef} className="flex flex-col items-center justify-center min-h-27.5">
           {!isSubscribed ? (
             <div className="w-full flex flex-col items-center">
               <form onSubmit={handleSubmit} className="flex justify-center w-full">
@@ -161,6 +161,7 @@ export default function Footer() {
                     className="flex-1 bg-transparent text-sm text-white placeholder-white/50 outline-none disabled:opacity-50"
                   />
                   <button
+                  aria-label='submit'
                     type="submit"
                     disabled={loading}
                     className="ml-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-[#4a4a4a] hover:bg-white/90 transition-colors disabled:opacity-50"
