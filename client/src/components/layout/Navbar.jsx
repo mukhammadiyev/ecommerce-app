@@ -2,7 +2,7 @@ import gsap from "gsap"; // Imported GSAP
 import { useEffect, useRef, useState } from "react";
 import { FaBagShopping, FaBars, FaUserLarge, FaXmark } from "react-icons/fa6";
 import { Link } from "react-router-dom";
-import Logo from "@/assets/logo.png";
+import Logo from "@images/logo.png";
 import useCartStore from "../../hooks/useCartStore.js";
 
 function Navbar() {
